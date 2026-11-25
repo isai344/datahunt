@@ -396,11 +396,11 @@ table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0}th,td{bor
 
 function Nueva-Pagina([string]$titulo, [string]$contenido, $ctx = $null) {
     $nonce = Nuevo-Nonce
-    $nav = "<a href='/'>Inicio</a><a href='/registro'>Registro</a><a href='/login'>Iniciar sesión</a><a href='/privacy'>Aviso de privacidad</a>"
+    $nav = "<a href='/'>Inicio</a><a href='/registro'>Registro</a><a href='/login'>Iniciar sesión</a>"
     $sesion = if ($ctx) { Get-SesionActual $ctx } else { $null }
     if ($sesion -and $sesion.Rol -in $RolesAdmin) { $nav += "<a href='/admin'>Administración</a>" }
     if ($sesion) {
-        $nav += "<a href='/mi-cuenta'>Mi cuenta</a><a href='/arco'>Derechos ARCO</a><a href='/ajustes'>Ajustes</a>"
+        $nav += "<a href='/mi-cuenta'>Mi cuenta</a><a href='/ajustes'>Ajustes</a>"
         $nav += "<form method='post' action='/logout' style='display:inline'><button type='submit' style='margin:0;padding:4px 9px'>Cerrar sesión ($(Escapar $sesion.Rol))</button></form>"
     }
     $nombre = Escapar $CompanyName
@@ -425,17 +425,46 @@ $alerta<form method='post' action='/login'>
 "@
 }
 
-function Formulario-Ajustes([string]$mensaje = "", [bool]$esError = $true) {
+function Seccion-Arco($usuario, [string]$email) {
+    if ($null -eq $usuario) {
+        return "<hr><section id='arco'><h3>Derechos ARCO</h3><p>Tu cuenta no tiene un registro de paciente asociado en <code>users.csv</code>.</p></section>"
+    }
+    return @"
+<hr><section id='arco'>
+<h3>Derechos ARCO (Rectificación, Cancelación y Oposición)</h3>
+<p>Ejerce tus derechos <strong>ARCO</strong> (LFPDPPP 2025 / GDPR / CCPA) sobre tu cuenta autenticada. Para consultar tus datos completos ve a <a href='/mi-cuenta'>Mi cuenta</a>.</p>
+<h4>Rectificación de datos</h4>
+<form method='post' action='/ajustes'>
+<input type='hidden' name='email' value='$(Escapar $email)'>
+<label>Nombre completo <input type='text' name='nombre' maxlength='120' value='$(Escapar $usuario.Nombre)' required></label>
+<label>Teléfono <input type='tel' name='telefono' maxlength='20' value='$(Escapar $usuario.Telefono)' required></label>
+<label>Aseguradora y póliza <input type='text' name='aseguradora_poliza' maxlength='200' value='$(Escapar $usuario.AseguradoraPoliza)' required></label>
+<label>Motivo de consulta y alergias <textarea name='motivo_alergias' maxlength='1000' required>$(Escapar $usuario.MotivoAlergias)</textarea></label>
+<button type='submit' name='accion' value='rectificar'>Guardar rectificación</button></form>
+<h4>Cancelación u oposición</h4>
+<p>Esta acción elimina tus datos de pre-registro de Data Hunt y cierra tu sesión.</p>
+<form method='post' action='/ajustes'>
+<label>Correo de la cuenta <input type='email' name='email' value='$(Escapar $email)' readonly></label>
+<button type='submit' name='accion' value='cancelar'>Cancelar / oponerme al tratamiento y eliminar mis datos</button></form>
+</section>
+"@
+}
+
+function Formulario-Ajustes([string]$mensaje = "", [bool]$esError = $true, $usuario = $null, [string]$email = "") {
     $clase = if ($esError) { "err" } else { "ok" }
     $alerta = if ($mensaje) { "<p class='$clase'>$(Escapar $mensaje)</p>" } else { "" }
+    $arco = if ($email) { Seccion-Arco $usuario $email } else { "" }
     return @"
-$alerta<form method='post' action='/ajustes'>
+$alerta<h3>Cambiar contraseña</h3>
+<form method='post' action='/ajustes'>
+<input type='hidden' name='accion' value='password'>
 <label>Contraseña actual <input type='password' name='password_actual' required autocomplete='current-password' maxlength='128'></label>
 <label>Nueva contraseña <input type='password' name='password_nueva' required autocomplete='new-password' minlength='8' maxlength='128'></label>
 <label>Confirmar nueva contraseña <input type='password' name='password_confirmacion' required autocomplete='new-password' minlength='8' maxlength='128'></label>
 <button type='submit'>Guardar contraseña</button></form>
 <p>La nueva contraseña debe tener entre 8 y 128 caracteres y ser diferente de la actual. Al guardarla se cierran todas las sesiones de la cuenta.</p>
 <p>Si tu cuenta aún no tiene contraseña, solicítala al administrador.</p>
+$arco
 "@
 }
 
@@ -451,11 +480,11 @@ function Pagina-Privacidad {
 <h3>4. Transferencias y encargados</h3>
 <p>Solo se comparten cuando lo exige la ley o con proveedores de infraestructura bajo contrato que prohibe cualquier uso distinto. No se realizan transferencias internacionales distintas de las necesarias para la operación del servicio.</p>
 <h3>5. Derechos ARCO y revocación</h3>
-<p>Puedes acceder, rectificar, cancelar u oponerte al tratamiento, así como revocar tu consentimiento, desde <a href='/arco'>la solicitud ARCO</a> o escribiendo a {CONTACTO}. La respuesta se da en los plazos que marca la ley aplicable.</p>
+<p>Puedes acceder, rectificar, cancelar u oponerte al tratamiento, así como revocar tu consentimiento, desde <a href='/ajustes#arco'>el apartado de derechos ARCO en Ajustes</a> o escribiendo a {CONTACTO}. La respuesta se da en los plazos que marca la ley aplicable.</p>
 <h3>6. GDPR (Unión Europea)</h3>
 <p>Base jurídica: consentimiento explícito (art. 6.1.a) y, para datos de salud, consentimiento expreso (art. 9.2.a). Conservamos los datos solo mientras sea necesario para la atención. Tienes derecho a portabilidad, limitación y a presentar reclamación ante la autoridad de control.</p>
 <h3>7. CCPA (California)</h3>
-<p id='ccpa'>No vendemos información personal. Si elegiste residir en California puedes ejercer <strong>Do Not Sell My Personal Information</strong> y solicitar la eliminación de tus datos mediante <a href='/arco'>el formulario de eliminación</a>. No discriminaremos por ejercer estos derechos.</p>
+<p id='ccpa'>No vendemos información personal. Si elegiste residir en California puedes ejercer <strong>Do Not Sell My Personal Information</strong> y solicitar la eliminación de tus datos mediante <a href='/ajustes#arco'>el formulario de eliminación en Ajustes</a>. No discriminaremos por ejercer estos derechos.</p>
 <h3>8. Conservación y seguridad</h3>
 <p>Los registros se conservan únicamente durante el periodo de atención y se eliminan al solicitarlo. Aplicamos PBKDF2 con sal, comparación en tiempo constante, sesiones HttpOnly/SameSite=Strict, ACL restrictiva en los archivos, anonimización de IP y registro de eventos sin datos personales.</p>
 <h3>9. Cambios al aviso</h3>
@@ -477,7 +506,9 @@ $Rutas["/"] = {
     param($ctx)
     $contenido = "<p>Bienvenido a $(Escapar $CompanyName): $(Escapar $AppVersion).</p>"
     $contenido += "<p>Registro de pacientes del departamento $(Escapar $CompanyName) - DEP-01.</p>"
-    $contenido += "<p><a href='/registro'>Ir al pre-registro</a> | <a href='/login'>Iniciar sesión</a></p>"
+    $contenido += "<div class='aviso'><strong>Te invitamos a revisar nuestro Aviso de Privacidad</strong> integrado a continuación antes de realizar tu pre-registro.</div>"
+    $contenido += "<p><a href='/registro'>Ir al pre-registro</a> | <a href='/login'>Iniciar sesión</a> | <a href='#aviso-privacidad'>Leer aviso de privacidad</a></p>"
+    $contenido += "<hr><section id='aviso-privacidad'><h2>Aviso de privacidad integral</h2>$(Pagina-Privacidad)</section>"
     Enviar $ctx (Nueva-Pagina "Inicio" $contenido $ctx)
 }
 
@@ -505,7 +536,7 @@ $Rutas["/registro"] = {
         $html += "<div class='aviso'><strong>Aviso de privacidad simplificado.</strong> "
         $html += "Usamos tus datos para tu atención médica y la gestión de tu aseguradora; no los vendemos. "
         $html += "Puedes ejercer tus derechos ARCO y revocar tu consentimiento. "
-        $html += "<a href='/privacy' target='_blank'>Consultar el aviso de privacidad integral (versión $(Escapar $PrivacyPolicyVer))</a>.</div>"
+        $html += "<a href='/#aviso-privacidad'>Consultar el aviso de privacidad integral (versión $(Escapar $PrivacyPolicyVer))</a>.</div>"
         $html += "<label><input type='checkbox' id='consent' name='consent' value='True' required> "
         $html += "D-13: Leí y acepto el aviso de privacidad y el tratamiento de mis datos, incluidos los de salud.</label>"
 
@@ -517,8 +548,8 @@ $Rutas["/registro"] = {
 
         # CORRECCIÓN H-07: CCPA visible solo cuando se selecciona California (Estados Unidos - California).
         $html += "<div id='ccpa' class='ccpa' style='display:none'><strong>CCPA - California.</strong> "
-        $html += "<a href='/privacy#ccpa'>Do Not Sell My Personal Information</a> | "
-        $html += "<a href='/arco'>Solicitar eliminación de mis datos personales</a></div>"
+        $html += "<a href='/#ccpa'>Do Not Sell My Personal Information</a> | "
+        $html += "<a href='/ajustes#arco'>Solicitar eliminación de mis datos personales</a></div>"
         $html += "<script nonce='$nonce'>function actualizaJurisdiccion(){var s=document.getElementById('jurisdiccion');"
         $html += "var d=document.getElementById('ccpa');d.style.display=(s.value.indexOf('California')>=0)?'block':'none';}"
         $html += "document.getElementById('jurisdiccion').addEventListener('change',actualizaJurisdiccion);"
@@ -612,8 +643,8 @@ $Rutas["/registro"] = {
     $html += "<p>Jurisdicción declarada: $(Escapar $form['jurisdiccion']) - $(Escapar $Jurisdicciones[$form['jurisdiccion']]).</p>"
     if ($form["jurisdiccion"] -like "*California*") {
         # CORRECCIÓN H-07: recordatorio CCPA también en la confirmación del servidor.
-        $html += "<div class='ccpa'><a href='/privacy#ccpa'>Do Not Sell My Personal Information</a> | "
-        $html += "<a href='/arco'>Solicitar eliminación de mis datos personales</a></div>"
+        $html += "<div class='ccpa'><a href='/#ccpa'>Do Not Sell My Personal Information</a> | "
+        $html += "<a href='/ajustes#arco'>Solicitar eliminación de mis datos personales</a></div>"
     }
     $html += "<p><a href='/login'>Iniciar sesión</a></p>"
     Enviar $ctx (Nueva-Pagina "Registro confirmado" $html $ctx)
@@ -683,9 +714,13 @@ $Rutas["/ajustes"] = {
         return
     }
 
+    $usuarios = @(Leer-Csv $UsersCsv)
+    $usuario = @($usuarios | Where-Object { $_.Email -ieq $sesion.Email } | Select-Object -First 1)
+    $u = if ($usuario.Count -eq 1) { $usuario[0] } else { $null }
+
     if ($ctx.Request.HttpMethod -eq "GET") {
         Registrar-Evento $ctx "AJUSTES_VIEW" "/ajustes" $true
-        Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes) $ctx)
+        Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes "" $true $u $sesion.Email) $ctx)
         return
     }
     if ($ctx.Request.HttpMethod -ne "POST") {
@@ -696,6 +731,52 @@ $Rutas["/ajustes"] = {
     $form = Leer-Formulario $ctx
     foreach ($clave in @($form.Keys)) { $form[$clave] = (($form[$clave] -replace '[\r\n]+', ' ')).Trim() }
 
+    $accion = if ($form.ContainsKey("accion")) { $form["accion"] } else { "password" }
+    if ($accion -in @("rectificar", "cancelar")) {
+        if ($null -eq $u) {
+            Enviar $ctx (Pagina-Error "Cuenta no encontrada" "No se encontró el registro de tu cuenta." $ctx) 404
+            return
+        }
+        $email = if ($form.ContainsKey("email")) { $form["email"] } else { "" }
+        if ($email -ine $sesion.Email) {
+            Registrar-Evento $ctx "ARCO_RECHAZADO" "/ajustes" $false "WARN"
+            Enviar $ctx (Pagina-Error "Solicitud rechazada" "Solo puedes ejercer derechos sobre tu propia cuenta." $ctx) 403
+            return
+        }
+        if ($accion -eq "rectificar") {
+            $nombre = if ($form.ContainsKey("nombre")) { $form["nombre"] } else { "" }
+            $telefono = if ($form.ContainsKey("telefono")) { $form["telefono"] } else { "" }
+            $poliza = if ($form.ContainsKey("aseguradora_poliza")) { $form["aseguradora_poliza"] } else { "" }
+            $motivo = if ($form.ContainsKey("motivo_alergias")) { $form["motivo_alergias"] } else { "" }
+            if ([string]::IsNullOrWhiteSpace($nombre) -or $nombre.Length -gt 120 -or
+                $telefono -notmatch '^[0-9+\-() ]{7,20}$' -or
+                [string]::IsNullOrWhiteSpace($poliza) -or $poliza.Length -gt 200 -or
+                [string]::IsNullOrWhiteSpace($motivo) -or $motivo.Length -gt 1000) {
+                Registrar-Evento $ctx "ARCO_RECTIFICACION_RECHAZADA" "/ajustes" $false "WARN"
+                Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes "Revisa los campos de rectificación e inténtalo de nuevo." $true $u $sesion.Email) $ctx) 400
+                return
+            }
+            $u.Nombre = $nombre
+            $u.Telefono = $telefono
+            $u.AseguradoraPoliza = $poliza
+            $u.MotivoAlergias = $motivo
+            Escribir-Csv $UsersCsv $EncabezadoUsuarios $usuarios
+            Registrar-Evento $ctx "ARCO_RECTIFICACION_OK" "/ajustes" $true
+            Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes "Tu solicitud de rectificación ARCO fue aplicada correctamente." $false $u $sesion.Email) $ctx)
+            return
+        }
+
+        $resto = @($usuarios | Where-Object { $_.Email -ine $email })
+        Escribir-Csv $UsersCsv $EncabezadoUsuarios $resto
+        $MetadatosAutorizados.Remove($email.ToLowerInvariant()) | Out-Null
+        Registrar-Evento $ctx "ARCO_CANCELACION_OK" "/ajustes" $true
+        Cerrar-Sesion $ctx
+        $html = "<p class='ok'>Tu solicitud de cancelación/oposición fue registrada, los datos fueron eliminados y tu sesión se cerró.</p>"
+        $html += "<p><a href='/'>Volver al inicio</a></p>"
+        Enviar $ctx (Nueva-Pagina "Solicitud ARCO atendida" $html $ctx)
+        return
+    }
+
     $actual = if ($form.ContainsKey("password_actual")) { $form["password_actual"] } else { "" }
     $nueva = if ($form.ContainsKey("password_nueva")) { $form["password_nueva"] } else { "" }
     $confirmacion = if ($form.ContainsKey("password_confirmacion")) { $form["password_confirmacion"] } else { "" }
@@ -703,21 +784,19 @@ $Rutas["/ajustes"] = {
     $rechazar = {
         param([string]$mensaje)
         Registrar-Evento $ctx "PASSWORD_CAMBIO_RECHAZADO" "/ajustes" $false "WARN"
-        Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes $mensaje) $ctx) 400
+        Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes $mensaje $true $u $sesion.Email) $ctx) 400
     }
 
     if ($actual.Length -lt 1 -or $actual.Length -gt 128) { & $rechazar "La contraseña actual no es válida."; return }
     if ($nueva.Length -lt 8 -or $nueva.Length -gt 128) { & $rechazar "La nueva contraseña debe tener entre 8 y 128 caracteres."; return }
     if ($nueva -cne $confirmacion) { & $rechazar "La confirmación de la nueva contraseña no coincide."; return }
 
-    $usuarios = @(Leer-Csv $UsersCsv)
-    $usuario = @($usuarios | Where-Object { $_.Email -ieq $sesion.Email } | Select-Object -First 1)
-    if ($usuario.Count -ne 1) { & $rechazar "No se encontró la cuenta autenticada."; return }
+    if ($null -eq $u) { & $rechazar "No se encontró la cuenta autenticada."; return }
 
-    if (-not (Probar-Contrasena $actual $usuario[0].PasswordHash)) { & $rechazar "La contraseña actual es incorrecta."; return }
-    if (Probar-Contrasena $nueva $usuario[0].PasswordHash) { & $rechazar "La nueva contraseña debe ser diferente de la actual."; return }
+    if (-not (Probar-Contrasena $actual $u.PasswordHash)) { & $rechazar "La contraseña actual es incorrecta."; return }
+    if (Probar-Contrasena $nueva $u.PasswordHash) { & $rechazar "La nueva contraseña debe ser diferente de la actual."; return }
 
-    $usuario[0].PasswordHash = Nuevo-HashContrasena $nueva
+    $u.PasswordHash = Nuevo-HashContrasena $nueva
     Escribir-Csv $UsersCsv $EncabezadoUsuarios $usuarios
 
     foreach ($token in @($Sesiones.Keys)) {
@@ -900,13 +979,6 @@ $Rutas["/descargar"] = {
     Enviar-Archivo $ctx $bytes $nombre
 }
 
-$Rutas["/privacy"] = {
-    param($ctx)
-    Enviar $ctx (Nueva-Pagina "Aviso de privacidad integral" (Pagina-Privacidad) $ctx)
-}
-
-$Rutas["/aviso"] = $Rutas["/privacy"]
-
 $Rutas["/mi-cuenta"] = {
     param($ctx)
 
@@ -941,98 +1013,8 @@ $Rutas["/mi-cuenta"] = {
     })
     $html = "<p><strong>Derecho de Acceso (ARCO):</strong> estos son los datos personales registrados en tu cuenta (<code>$(Escapar $sesion.Rol)</code>).</p>"
     $html += Tabla-Html $filas @("Id", "Nombre", "Email", "FechaNacimiento", "Telefono", "Jurisdiccion", "AseguradoraPoliza", "MotivoAlergias", "Consentimiento", "FechaConsentimiento", "VersionAviso", "FechaRegistro")
-    $html += "<p><a href='/arco'>Ejercer derechos ARCO (rectificar o eliminar)</a> | <a href='/ajustes'>Cambiar contraseña</a></p>"
+    $html += "<p><a href='/ajustes#arco'>Ejercer derechos ARCO (rectificar o eliminar)</a> | <a href='/ajustes'>Cambiar contraseña</a></p>"
     Enviar $ctx (Nueva-Pagina "Mi cuenta" $html $ctx)
-}
-
-$Rutas["/arco"] = {
-    param($ctx)
-
-    # CORRECCIÓN H-07 / C-15: canal ARCO (Acceso, Rectificación, Cancelación y Oposición) con verificación de sesión.
-    $sesion = Get-SesionActual $ctx
-    if (-not $sesion) {
-        if ($ctx.Request.HttpMethod -eq "GET") {
-            Enviar $ctx (Pagina-Error "Autenticación requerida" "Inicia sesión para ejercer tus derechos ARCO. <a href='/login'>Ir a /login</a>" $ctx) 401
-        } else {
-            Enviar $ctx (Pagina-Error "Autenticación requerida" "Inicia sesión primero." $ctx) 403
-        }
-        return
-    }
-
-    $usuarios = @(Leer-Csv $UsersCsv)
-    $usuario = @($usuarios | Where-Object { $_.Email -ieq $sesion.Email } | Select-Object -First 1)
-    if ($usuario.Count -ne 1) {
-        Enviar $ctx (Pagina-Error "Cuenta no encontrada" "No se encontró el registro de tu cuenta." $ctx) 404
-        return
-    }
-    $u = $usuario[0]
-
-    if ($ctx.Request.HttpMethod -eq "GET") {
-        $html = "<p>Ejerce tus derechos <strong>ARCO</strong> (LFPDPPP 2025 / GDPR / CCPA) sobre tu cuenta autenticada. Para consultar tus datos completos ve a <a href='/mi-cuenta'>Mi cuenta</a>.</p>"
-        $html += "<h3>Rectificación de datos</h3>"
-        $html += "<form method='post' action='/arco'>"
-        $html += "<input type='hidden' name='email' value='$(Escapar $sesion.Email)'>"
-        $html += "<label>Nombre completo <input type='text' name='nombre' maxlength='120' value='$(Escapar $u.Nombre)' required></label>"
-        $html += "<label>Teléfono <input type='tel' name='telefono' maxlength='20' value='$(Escapar $u.Telefono)' required></label>"
-        $html += "<label>Aseguradora y póliza <input type='text' name='aseguradora_poliza' maxlength='200' value='$(Escapar $u.AseguradoraPoliza)' required></label>"
-        $html += "<label>Motivo de consulta y alergias <textarea name='motivo_alergias' maxlength='1000' required>$(Escapar $u.MotivoAlergias)</textarea></label>"
-        $html += "<button type='submit' name='accion' value='rectificar'>Guardar rectificación</button></form>"
-        $html += "<h3>Cancelación u oposición</h3>"
-        $html += "<p>Esta acción elimina tus datos de pre-registro de Data Hunt y cierra tu sesión.</p>"
-        $html += "<form method='post' action='/arco'>"
-        $html += "<label>Correo de la cuenta <input type='email' name='email' value='$(Escapar $sesion.Email)' readonly></label>"
-        $html += "<button type='submit' name='accion' value='cancelar'>Cancelar / oponerme al tratamiento y eliminar mis datos</button></form>"
-        Enviar $ctx (Nueva-Pagina "Derechos ARCO" $html $ctx)
-        return
-    }
-    if ($ctx.Request.HttpMethod -ne "POST") {
-        Enviar $ctx (Pagina-Error "Método no permitido" "Usa GET o POST en esta ruta." $ctx) 405
-        return
-    }
-
-    $form = Leer-Formulario $ctx
-    foreach ($clave in @($form.Keys)) { $form[$clave] = (($form[$clave] -replace '[\r\n]+', ' ')).Trim() }
-    $email = if ($form.ContainsKey("email")) { $form["email"] } else { "" }
-    if ($email -ine $sesion.Email) {
-        Registrar-Evento $ctx "ARCO_RECHAZADO" "/arco" $false "WARN"
-        Enviar $ctx (Pagina-Error "Solicitud rechazada" "Solo puedes ejercer derechos sobre tu propia cuenta." $ctx) 403
-        return
-    }
-
-    $accion = if ($form.ContainsKey("accion")) { $form["accion"] } else { "cancelar" }
-    if ($accion -eq "rectificar") {
-        $nombre = if ($form.ContainsKey("nombre")) { $form["nombre"] } else { "" }
-        $telefono = if ($form.ContainsKey("telefono")) { $form["telefono"] } else { "" }
-        $poliza = if ($form.ContainsKey("aseguradora_poliza")) { $form["aseguradora_poliza"] } else { "" }
-        $motivo = if ($form.ContainsKey("motivo_alergias")) { $form["motivo_alergias"] } else { "" }
-        if ([string]::IsNullOrWhiteSpace($nombre) -or $nombre.Length -gt 120 -or
-            $telefono -notmatch '^[0-9+\-() ]{7,20}$' -or
-            [string]::IsNullOrWhiteSpace($poliza) -or $poliza.Length -gt 200 -or
-            [string]::IsNullOrWhiteSpace($motivo) -or $motivo.Length -gt 1000) {
-            Registrar-Evento $ctx "ARCO_RECTIFICACION_RECHAZADA" "/arco" $false "WARN"
-            Enviar $ctx (Pagina-Error "Datos inválidos" "Revisa los campos de rectificación e inténtalo de nuevo." $ctx) 400
-            return
-        }
-        $u.Nombre = $nombre
-        $u.Telefono = $telefono
-        $u.AseguradoraPoliza = $poliza
-        $u.MotivoAlergias = $motivo
-        Escribir-Csv $UsersCsv $EncabezadoUsuarios $usuarios
-        Registrar-Evento $ctx "ARCO_RECTIFICACION_OK" "/arco" $true
-        $html = "<p class='ok'>Tu solicitud de rectificación fue aplicada correctamente.</p>"
-        $html += "<p><a href='/mi-cuenta'>Ver mis datos actualizados</a> | <a href='/'>Volver al inicio</a></p>"
-        Enviar $ctx (Nueva-Pagina "Rectificación ARCO aplicada" $html $ctx)
-        return
-    }
-
-    $resto = @($usuarios | Where-Object { $_.Email -ine $email })
-    Escribir-Csv $UsersCsv $EncabezadoUsuarios $resto
-    $MetadatosAutorizados.Remove($email.ToLowerInvariant()) | Out-Null
-    Registrar-Evento $ctx "ARCO_CANCELACION_OK" "/arco" $true
-    Cerrar-Sesion $ctx
-    $html = "<p class='ok'>Tu solicitud de cancelación/oposición fue registrada, los datos fueron eliminados y tu sesión se cerró.</p>"
-    $html += "<p><a href='/'>Volver al inicio</a></p>"
-    Enviar $ctx (Nueva-Pagina "Solicitud ARCO atendida" $html $ctx)
 }
 
 # ------------------------------------------------------------------------------
