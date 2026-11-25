@@ -1,7 +1,3 @@
-﻿# Hospital Integral Kuxtal - Reto 4: Pagina Web Data Hunt
-# Version v2.0-SECURED - Arquitectura de UN SOLO ARCHIVO (app.ps1)
-# Ejecucion: pwsh -File .\app.ps1  (recomendado detras de reverse proxy HTTPS)
-# Toda modificacion de seguridad esta marcada con "# CORRECCIÓN H-XX".
 
 $ErrorActionPreference = "Stop"
 
