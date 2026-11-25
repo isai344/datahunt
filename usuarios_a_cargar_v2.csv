@@ -1,0 +1,4 @@
+Nombre,Email,Password,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias
+ADMIN,admin@kuxtal.test,,,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
+DPO,dpo@kuxtal.test,,,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
+ADMISSION,admision@kuxtal.test,,,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
