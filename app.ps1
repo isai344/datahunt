@@ -5,9 +5,6 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Warning "Este script esta certificado para PowerShell 7. Usa pwsh en produccion."
 }
 
-# ------------------------------------------------------------------------------
-# 1. CONFIGURACION EDITABLE DEL SISTEMA
-# ------------------------------------------------------------------------------
 $CompanyName      = "Hospital Integral Kuxtal"
 $AppVersion       = "v2.0-SECURED"
 $DataPath         = "C:\DataHunt"
@@ -18,8 +15,7 @@ $PrivacyPolicyVer = "v1.0 (2026-11-25)"
 $Direccion = "localhost"
 $Puerto    = 5000
 
-# CORRECCIÓN H-04: la aplicacion escucha HTTP local; el proxy IIS/nginx termina TLS.
-# Si el proxy envia X-Forwarded-Proto, se fuerza HTTPS. En produccion poner $ExigirHttps = $true.
+
 $ExigirHttps      = $false
 $ProxyProtoHeader = "X-Forwarded-Proto"
 
@@ -28,8 +24,6 @@ $MaxBodyBytes        = 65536
 $IteracionesPbkdf2   = 600000
 $CookieSesion        = "kuxtal_sid"
 
-# CORRECCIÓN H-02: RBAC según matriz de roles (R-01 Paciente, R-02 Admisión, R-03 TI, R-04 DPO, R-05 Médico, R-06 Facturación).
-# Para promover una cuenta, agregar su correo a la tabla.
 $RolesAdmin = @("R-02", "R-03", "R-04", "R-05", "R-06")
 $RolesAuditoria = @("R-03", "R-04")
 $RolesPorEmail = @{
@@ -56,9 +50,7 @@ $Jurisdicciones = [ordered]@{
 
 New-Item -ItemType Directory -Path $DataPath -Force | Out-Null
 
-# ------------------------------------------------------------------------------
-# 2. FUNCIONES DE SOPORTE: CRIPTOGRAFIA, CSV, HTML, SESIONES Y LOGS
-# ------------------------------------------------------------------------------
+
 function Ahora { (Get-Date -Format 'o') }
 
 function New-RandomBytes([int]$cantidad) {
@@ -73,8 +65,7 @@ function Escapar([string]$texto) {
     return [System.Net.WebUtility]::HtmlEncode([string]$texto)
 }
 
-# CORRECCIÓN H-01: derivacion PBKDF2-SHA256 con sal aleatoria de 16 bytes.
-# Formato exigido en users.csv: salt_base64:hash_base64 (hash de 32 bytes).
+
 function Nuevo-HashContrasena([string]$contrasena) {
     $sal = New-RandomBytes 16
     $derive = [System.Security.Cryptography.Rfc2898DeriveBytes]::new(
@@ -86,7 +77,7 @@ function Nuevo-HashContrasena([string]$contrasena) {
     return "$([Convert]::ToBase64String($sal)):$([Convert]::ToBase64String($hash))"
 }
 
-# Comparacion en tiempo constante compatible con .NET Framework y .NET (PowerShell 7).
+
 function Test-IgualdadTiempoConstante([byte[]]$a, [byte[]]$b) {
     if ($a.Length -ne $b.Length) { return $false }
     $diferencia = 0
@@ -115,7 +106,7 @@ function Probar-Contrasena([string]$contrasena, [string]$guardado) {
     } catch { return $false }
 }
 
-# CORRECCIÓN H-06: hash SHA-256 de integridad de los CSV (consumible por verify.ps1 de TI).
+
 function Get-FileSha256([string]$ruta) {
     if (-not (Test-Path -LiteralPath $ruta)) { return "NO_DISPONIBLE" }
     $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -125,8 +116,7 @@ function Get-FileSha256([string]$ruta) {
     } finally { $sha.Dispose() }
 }
 
-# CORRECCIÓN H-06: ACL restrictiva en reposo (solo SYSTEM, Administradores y el usuario del servicio).
-# Se conserva el formato CSV UTF-8 exigido por la especificacion.
+
 function Set-ProteccionArchivo([string]$ruta) {
     try {
         $acl = Get-Acl -LiteralPath $ruta
@@ -174,8 +164,6 @@ function Escribir-Csv([string]$ruta, [string]$encabezado, [array]$registros) {
     Set-Content -LiteralPath $ruta -Value $lineas -Encoding utf8
     Set-ProteccionArchivo $ruta
 }
-
-# CORRECCIÓN H-05: la IP se anonimiza (ultimo octeto /64 en IPv6) y nunca se guarda el User-Agent.
 function Get-IpAnonimizada($ctx) {
     $ip = $ctx.Request.RemoteEndPoint.Address.ToString()
     if ($ip -match '^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.\d{1,3}$') {
@@ -216,7 +204,6 @@ function Get-Rol([string]$email) {
     return "R-01"
 }
 
-# CORRECCIÓN H-04: cookies HttpOnly + SameSite=Strict y Secure cuando hay TLS.
 function Test-EsSeguro($ctx) {
     if ($ctx.Request.IsSecureConnection) { return $true }
     $proto = $ctx.Request.Headers[$ProxyProtoHeader]
@@ -249,7 +236,6 @@ function Cerrar-Sesion($ctx) {
     Set-Header $ctx "Set-Cookie" "$CookieSesion=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict$seguro"
 }
 
-# CORRECCIÓN H-03: bitacora estructurada SOLO con eventos operativos, sin PII.
 function Registrar-Evento($ctx, [string]$evento, [string]$ruta, [bool]$exito, [string]$nivel = "INFO", [bool]$metadatos = $false) {
     $sesion = Get-SesionActual $ctx
     if ($sesion) { $metadatos = [bool]$sesion.Metadatos }
@@ -289,7 +275,6 @@ function Nuevo-Nonce {
     return $script:CspNonce
 }
 
-# CORRECCIÓN H-04: cabeceras de transporte/seguridad para reverse proxy HTTPS.
 function Set-CabecerasSeguras($ctx) {
     if (-not $script:CspNonce) { Nuevo-Nonce | Out-Null }
     $nonce = $script:CspNonce
@@ -464,9 +449,7 @@ function Pagina-Error([string]$titulo, [string]$mensaje, $ctx) {
     return Nueva-Pagina $titulo "<p class='err'>$(Escapar $mensaje)</p><p><a href='/'>Volver al inicio</a></p>" $ctx
 }
 
-# ------------------------------------------------------------------------------
-# 3. RUTAS
-# ------------------------------------------------------------------------------
+
 $Rutas = @{}
 
 $Rutas["/"] = {
@@ -497,7 +480,6 @@ $Rutas["/registro"] = {
         $html += "<label>D-07 Aseguradora y número de póliza <input type='text' name='aseguradora_poliza' maxlength='200' required></label>"
         $html += "<label>D-08 Motivo de consulta y alergias (dato sensible de salud) <textarea name='motivo_alergias' maxlength='1000' required></textarea></label>"
 
-        # CORRECCIÓN H-07: resumen visible + enlace al aviso integral + checkbox obligatorio sin marcar.
         $html += "<div class='aviso'><strong>Aviso de privacidad simplificado.</strong> "
         $html += "Usamos tus datos para tu atención médica y la gestión de tu aseguradora; no los vendemos. "
         $html += "Puedes ejercer tus derechos ARCO y revocar tu consentimiento. "
@@ -505,13 +487,11 @@ $Rutas["/registro"] = {
         $html += "<label><input type='checkbox' id='consent' name='consent' value='True' required> "
         $html += "D-13: Leí y acepto el aviso de privacidad y el tratamiento de mis datos, incluidos los de salud.</label>"
 
-        # CORRECCIÓN H-05: metadatos no esenciales solo si el usuario lo autoriza expresamente.
         $html += "<label><input type='checkbox' id='metadata' name='metadata' value='True'> "
         $html += "D-14 (opcional): Autorizo registrar una IP anonimizada para detectar accesos no autorizados. "
         $html += "Si no marcas esta casilla no se registrará IP ni navegador.</label>"
         $html += "<button type='submit'>Crear pre-registro</button></form>"
 
-        # CORRECCIÓN H-07: CCPA visible solo cuando se selecciona California (Estados Unidos - California).
         $html += "<div id='ccpa' class='ccpa' style='display:none'><strong>CCPA - California.</strong> "
         $html += "<a href='/privacy#ccpa'>Do Not Sell My Personal Information</a> | "
         $html += "<a href='/arco'>Solicitar eliminación de mis datos personales</a></div>"
@@ -529,7 +509,6 @@ $Rutas["/registro"] = {
         return
     }
 
-    # CORRECCIÓN H-03: la consola solo registra el evento operativo, nunca datos del paciente.
     Write-Host "[INFO] $(Ahora) POST /registro recibido (sin datos personales en consola)"
 
     $form = Leer-Formulario $ctx
@@ -556,7 +535,6 @@ $Rutas["/registro"] = {
         if (-not $formatoOk -or $fechaNac -gt (Get-Date)) { $falla = $true }
     }
 
-    # CORRECCIÓN H-07: sin consentimiento expreso no se persiste ningun dato.
     $consentido = $form.ContainsKey("consent") -and $form["consent"] -ieq "True"
     if (-not $falla -and -not $consentido) { $falla = $true }
     if (-not $falla) {
@@ -586,7 +564,6 @@ $Rutas["/registro"] = {
         Id                  = [guid]::NewGuid().ToString()
         Nombre              = $form["nombre"]
         Email               = $form["email"]
-        # CORRECCIÓN H-01: nunca se escribe la contraseña en texto plano.
         PasswordHash        = Nuevo-HashContrasena $form["password"]
         FechaNacimiento     = $form["fecha_nacimiento"]
         Telefono            = $form["telefono"]
@@ -601,13 +578,11 @@ $Rutas["/registro"] = {
     Agregar-Csv $UsersCsv $registro
     $MetadatosAutorizados[$form["email"].ToLowerInvariant()] = $autorizaMetadatos
 
-    # CORRECCIÓN H-05: la bitacora no contiene correo, póliza, motivo ni User-Agent.
     Registrar-Evento $ctx "REGISTRO_OK" "/registro" $true "INFO" $autorizaMetadatos
 
     $html = "<p class='ok'>Pre-registro creado correctamente.</p>"
     $html += "<p>Jurisdicción declarada: $(Escapar $form['jurisdiccion']) - $(Escapar $Jurisdicciones[$form['jurisdiccion']]).</p>"
     if ($form["jurisdiccion"] -like "*California*") {
-        # CORRECCIÓN H-07: recordatorio CCPA también en la confirmación del servidor.
         $html += "<div class='ccpa'><a href='/privacy#ccpa'>Do Not Sell My Personal Information</a> | "
         $html += "<a href='/arco'>Solicitar eliminación de mis datos personales</a></div>"
     }
@@ -630,7 +605,6 @@ $Rutas["/login"] = {
     $form = Leer-Formulario $ctx
     foreach ($clave in @($form.Keys)) { $form[$clave] = (($form[$clave] -replace '[\r\n]+', ' ')).Trim() }
 
-    # CORRECCIÓN H-03: consola sin correo, contraseña ni tokens.
     Write-Host "[INFO] $(Ahora) intento de autenticacion recibido (credenciales omitidas)"
 
     $email = if ($form.ContainsKey("email")) { $form["email"] } else { "" }
@@ -638,7 +612,6 @@ $Rutas["/login"] = {
     $usuario = @(Leer-Csv $UsersCsv | Where-Object { $_.Email -ieq $email } | Select-Object -First 1)
     $correcto = $false
     if ($usuario.Count -eq 1 -and $claveValida) {
-        # CORRECCIÓN H-01: comparacion contra hash PBKDF2 en tiempo constante.
         $correcto = Probar-Contrasena $form["password"] $usuario[0].PasswordHash
     }
 
@@ -646,12 +619,10 @@ $Rutas["/login"] = {
     Registrar-Evento $ctx "LOGIN_OK" "/login" $correcto $(if ($correcto) { "INFO" } else { "WARN" }) $autoriza
 
     if (-not $correcto) {
-        # Mensaje generico: no revela si falló el correo o la contraseña.
         Enviar $ctx (Nueva-Pagina "Iniciar sesión" (Formulario-Login "Correo o contraseña incorrectos.") $ctx)
         return
     }
 
-    # CORRECCIÓN H-02: la sesion autenticada determina el rol para /admin o /mi-cuenta.
     $rol = Get-Rol $usuario[0].Email
     Nueva-Sesion $ctx $usuario[0].Email $rol $autoriza | Out-Null
     $destino = if ($rol -in $RolesAdmin) { "/admin" } else { "/mi-cuenta" }
@@ -730,7 +701,6 @@ $Rutas["/ajustes"] = {
 $Rutas["/admin"] = {
     param($ctx)
 
-    # CORRECCIÓN H-02: /admin exige sesion autenticada; sin sesion se redirige a /login.
     $sesion = Get-SesionActual $ctx
     if (-not $sesion) {
         Registrar-Evento $ctx "ACCESO_DENEGADO" "/admin" $false "WARN"
@@ -748,7 +718,6 @@ $Rutas["/admin"] = {
     $contenido = "<p>Sesión: $(Escapar $sesion.Rol) | Registros: $($usuarios.Count)</p>"
 
     if ($sesion.Rol -eq "R-02") {
-        # CORRECCIÓN H-02: rol R-02 (Admisión) ve registros ENMASCARADOS.
         $columnas = @("Id", "Nombre", "Email", "Jurisdiccion", "Telefono", "AseguradoraPoliza", "MotivoAlergias", "Consentimiento", "FechaConsentimiento", "VersionAviso", "FechaRegistro")
         $filas = @(foreach ($u in $usuarios) {
             [pscustomobject][ordered]@{
@@ -768,7 +737,6 @@ $Rutas["/admin"] = {
         $contenido += "<p><strong>Vista de admisión (R-02):</strong> campos sensibles enmascarados; la bitácora y los hashes no están disponibles para este rol.</p>"
         $contenido += "<h3>Pre-registros</h3>" + (Tabla-Html $filas $columnas)
     } elseif ($sesion.Rol -eq "R-05") {
-        # CORRECCIÓN H-02: rol R-05 (Médico / DEP-02) solo lectura de motivo de consulta y alergias.
         $columnas = @("Id", "Nombre", "FechaNacimiento", "MotivoAlergias")
         $filas = @(foreach ($u in $usuarios) {
             [pscustomobject][ordered]@{
@@ -781,7 +749,6 @@ $Rutas["/admin"] = {
         $contenido += "<p><strong>Vista clínica (R-05 - Servicios Médicos):</strong> acceso de solo lectura a identificación básica y motivo de consulta/alergias (sin datos financieros ni bitácora).</p>"
         $contenido += "<h3>Pre-registros clínicos</h3>" + (Tabla-Html $filas $columnas)
     } elseif ($sesion.Rol -eq "R-06") {
-        # CORRECCIÓN H-02: rol R-06 (Facturación / DEP-05) solo lectura de aseguradora y póliza, sin datos de salud.
         $columnas = @("Id", "Nombre", "Email", "AseguradoraPoliza")
         $filas = @(foreach ($u in $usuarios) {
             [pscustomobject][ordered]@{
@@ -794,10 +761,8 @@ $Rutas["/admin"] = {
         $contenido += "<p><strong>Vista de facturación (R-06 - Administración y Finanzas):</strong> acceso de solo lectura a aseguradora y póliza (sin datos sensibles de salud).</p>"
         $contenido += "<h3>Aseguradoras y pólizas</h3>" + (Tabla-Html $filas $columnas)
     } elseif ($sesion.Rol -eq "R-03") {
-        # CORRECCIÓN H-02: segregación de funciones para R-03 (TI). Administra la app sin consultar datos personales de pacientes.
         $contenido += "<p><strong>Vista de administración de TI (R-03):</strong> por segregación de funciones y mínimo privilegio, este rol no consulta datos personales ni clínicos de pacientes.</p>"
     } else {
-        # CORRECCIÓN H-02: R-04 (DPO / ARCO) tiene acceso de auditoría/ARCO. Nunca se muestra PasswordHash.
         $columnas = @("Id", "Nombre", "Email", "FechaNacimiento", "Telefono", "Jurisdiccion", "AseguradoraPoliza", "MotivoAlergias", "Consentimiento", "FechaConsentimiento", "VersionAviso", "FechaRegistro")
         $filas = @(foreach ($u in $usuarios) {
             [pscustomobject][ordered]@{
@@ -824,14 +789,12 @@ $Rutas["/admin"] = {
         $contenido += "<h3>Bitácora de eventos (sin datos personales)</h3>" + (Tabla-Html $accesos @("Fecha", "Evento", "Ruta", "Exito", "Nivel", "IPAnonimizada"))
     }
     if ($sesion.Rol -eq "R-03") {
-        # CORRECCIÓN H-06: verificacion de integridad de los archivos de datos.
         $contenido += "<h3>Integridad SHA-256</h3><p>users.csv: <code>$(Escapar (Get-FileSha256 $UsersCsv))</code><br>"
         $contenido += "access_log.csv: <code>$(Escapar (Get-FileSha256 $AccessLogCsv))</code></p>"
         $contenido += "<h3>Descargas</h3><ul>"
         $contenido += "<li><a href='/descargar?archivo=accesos'>Descargar access_log.csv</a></li>"
         $contenido += "</ul><p>Por segregación de funciones, R-03 solo descarga la bitácora operativa.</p>"
     } elseif ($sesion.Rol -eq "R-04") {
-        # CORRECCIÓN H-02: descarga de users.csv (sin PasswordHash) restringida a R-04 (DPO / ARCO).
         $contenido += "<h3>Descargas</h3><ul>"
         $contenido += "<li><a href='/descargar?archivo=usuarios'>Descargar users.csv (sin PasswordHash)</a></li>"
         $contenido += "<li><a href='/descargar?archivo=accesos'>Descargar access_log.csv</a></li>"
@@ -845,7 +808,6 @@ $Rutas["/admin"] = {
 $Rutas["/descargar"] = {
     param($ctx)
 
-    # CORRECCIÓN H-02: control de acceso RBAC también sobre la descarga de datos.
     $sesion = Get-SesionActual $ctx
     if (-not $sesion) {
         Registrar-Evento $ctx "DESCARGA_DENEGADA" "/descargar" $false "WARN"
@@ -878,7 +840,6 @@ $Rutas["/descargar"] = {
             Enviar $ctx (Pagina-Error "403 Prohibido" "Por segregación de funciones, solo R-04 (DPO/ARCO) puede descargar users.csv." $ctx) 403
             return
         }
-        # CORRECCIÓN H-02: R-04 audita sin recibir los hashes de contraseñas.
         $filas = @(Leer-Csv $UsersCsv | Select-Object -Property * -ExcludeProperty PasswordHash)
         $lineas = @($filas | ConvertTo-Csv -NoTypeInformation)
         $bytes = [System.Text.Encoding]::UTF8.GetBytes(($lineas -join "`r`n"))
