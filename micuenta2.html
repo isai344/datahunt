@@ -1,0 +1,125 @@
+<!doctype html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Mi cuenta - Hospital Integral Kuxtal</title><style>
+:root{
+  color-scheme:light;
+  --maroon:#7a1537; --maroon-dark:#4a0e22; --maroon-darker:#33081790;
+  --teal:#149a92; --teal-dark:#0d756f;
+  --bg:#f3f1f2; --surface:#ffffff; --surface-alt:#f6f7f8;
+  --border:#e1dee0;
+  --text:#262223; --text-muted:#6b6467;
+  --ok:#116b2a; --ok-bg:#e8f7ec; --ok-border:#8fd4a4;
+  --err:#a11212; --err-bg:#fdecec; --err-border:#f1b3b3;
+  --warn:#8a5a00; --warn-bg:#fff6e5; --warn-border:#f0cf8a;
+  --radius:10px; --shadow:0 2px 10px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  margin:0;color:var(--text);line-height:1.55;font-size:15.5px;background:var(--bg);min-height:100vh;
+}
+.bar-inner{max-width:1120px;margin:0 auto;padding:0 24px}
+header.topbar{background:var(--maroon);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+header.topbar .bar-inner{display:flex;align-items:center;gap:14px;padding:14px 24px}
+.brand-mark{
+  width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;
+  border:2px solid rgba(255,255,255,.55);background:#fff;
+}
+.brand-text h1{margin:0;font-size:20px;font-weight:800;line-height:1.25;letter-spacing:.2px}
+.subbar{background:var(--maroon-dark);border-bottom:3px solid var(--teal)}
+.subbar .bar-inner{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:4px;padding:0 24px}
+nav{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:4px 0}
+nav a,nav button{
+  font-size:13.5px;font-weight:600;color:#fff;text-decoration:none;position:relative;
+  padding:11px 13px;border-radius:0;background:transparent;border:0;cursor:pointer;font-family:inherit;
+}
+nav a::after{content:'';position:absolute;left:13px;right:13px;bottom:0;height:3px;background:var(--teal);transform:scaleX(0);transition:transform .15s ease}
+nav a:hover,nav a:focus-visible{background:rgba(255,255,255,.1);outline:none}
+nav a:hover::after,nav a:focus-visible::after{transform:scaleX(1)}
+nav button:hover,nav button:focus-visible{background:rgba(255,255,255,.1);outline:none}
+nav form{display:flex;margin:0}
+.breadcrumb{background:var(--surface);border-bottom:1px solid var(--border)}
+.breadcrumb .bar-inner{padding:10px 24px;font-size:13px;color:var(--text-muted)}
+.breadcrumb a{color:var(--maroon-dark);font-weight:700;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb .sep{margin:0 6px;color:#b8b3b5}
+.bc-home{width:14px;height:14px;vertical-align:-2px;margin-right:2px}
+main{max-width:1120px;margin:0 auto;background:var(--surface);padding:30px 24px 28px}
+main>h2{margin-top:0;font-size:24px;font-weight:800;color:var(--text);padding-bottom:14px;position:relative;letter-spacing:.1px}
+main>h2::after{content:'';display:block;width:64px;height:4px;background:var(--teal);border-radius:2px;margin-top:12px}
+section h2{color:var(--maroon-dark);font-size:19px;font-weight:800;margin:24px 0 12px}
+h3{color:var(--maroon-dark);font-size:16.5px;font-weight:700;margin:24px 0 10px}
+h4{color:var(--text);font-size:14.5px;margin:16px 0 8px}
+hr{border:0;border-top:1px solid var(--border);margin:26px 0}
+a{color:var(--teal-dark)}
+main a{color:var(--teal-dark);font-weight:600;text-decoration:none}
+main a:hover{text-decoration:underline}
+.hero{
+  background:linear-gradient(120deg,var(--maroon) 0%,var(--maroon-dark) 100%);color:#fff;
+  border-radius:16px;padding:26px 30px;margin:4px 0 24px;box-shadow:var(--shadow);
+}
+.hero h3{color:#fff;font-size:22px;margin:0 0 8px}
+.hero p{margin:0;opacity:.95;max-width:640px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:18px 0 24px}
+.card-grid a{
+  display:block;background:var(--surface-alt);border:1px solid var(--border);border-radius:12px;
+  padding:18px 16px;text-align:center;font-weight:700;color:var(--maroon-dark)!important;
+  text-decoration:none!important;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;
+}
+.card-grid a:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--teal)}
+.card-grid img{display:block;width:40px;height:40px;margin:0 auto 10px;object-fit:contain}
+label{display:block;margin:14px 0 4px;font-weight:600;font-size:13.5px;color:var(--text)}
+input,select,textarea{
+  display:block;width:100%;max-width:480px;padding:10px 12px;margin-top:5px;
+  border:1.5px solid var(--border);border-radius:7px;font:inherit;color:var(--text);
+  background:var(--surface);transition:border-color .15s ease,box-shadow .15s ease;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(20,154,146,.18);
+}
+textarea{min-height:92px;max-width:640px;resize:vertical}
+input[type=checkbox],input[type=radio]{
+  display:inline-block;width:auto;max-width:none;flex-shrink:0;margin:3px 0 0;accent-color:var(--maroon);
+}
+label:has(> input[type=checkbox]),label:has(> input[type=radio]){
+  display:flex;align-items:flex-start;gap:10px;font-weight:500;
+  background:var(--surface-alt);padding:12px 14px;border-radius:9px;max-width:640px;border:1px solid var(--border);
+}
+button,input[type=submit]{
+  padding:10px 20px;background:var(--teal);color:#fff;border:0;border-radius:6px;cursor:pointer;
+  font:inherit;font-weight:700;font-size:14px;letter-spacing:.2px;transition:background .12s ease,transform .12s ease;
+}
+button:hover,input[type=submit]:hover{background:var(--teal-dark);transform:translateY(-1px)}
+button:active,input[type=submit]:active{transform:translateY(0)}
+button:focus-visible{outline:2px solid var(--maroon);outline-offset:2px}
+.aviso,.ccpa,.err,.ok{border-radius:9px;padding:13px 16px;margin:16px 0;font-size:14px}
+.aviso{background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--teal);color:var(--text)}
+.aviso::before{content:'\2139 ';font-weight:700;color:var(--teal-dark)}
+.ccpa{background:var(--warn-bg);border:1px solid var(--warn-border);border-left:4px solid var(--warn);color:var(--warn)}
+.ccpa::before{content:'\26A0 ';font-weight:700}
+.err{background:var(--err-bg);border:1px solid var(--err-border);border-left:4px solid var(--err);color:var(--err);font-weight:600}
+.err::before{content:'\2715 ';font-weight:700}
+.ok{background:var(--ok-bg);border:1px solid var(--ok-border);border-left:4px solid var(--ok);color:var(--ok);font-weight:600}
+.ok::before{content:'\2713 ';font-weight:700}
+.tabla-scroll{overflow-x:auto;margin:12px 0;border-radius:9px;border:1px solid var(--border);-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border-bottom:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top;white-space:nowrap}
+th{background:var(--maroon-dark);color:#fff;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
+tbody tr:nth-child(even){background:var(--surface-alt)}
+tbody tr:hover{background:#f0eceb}
+tbody td:first-child{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:var(--text-muted)}
+code{word-break:break-all;background:var(--surface-alt);padding:2px 6px;border-radius:5px;font-size:.9em;color:var(--maroon-dark)}
+footer{color:var(--text-muted);font-size:12px;margin-top:30px;padding-top:16px;border-top:1px solid var(--border)}
+section#arco{margin-top:4px}
+@media (max-width:640px){
+  header.topbar .bar-inner,.subbar .bar-inner,.breadcrumb .bar-inner{padding-left:16px;padding-right:16px}
+  main{margin:0;padding:18px 16px}
+  input,select,textarea,label:has(> input[type=checkbox]),label:has(> input[type=radio]){max-width:100%}
+  .hero{padding:20px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<header class='topbar'><div class='bar-inner'><img src='/assets/cruz.png' class='brand-mark' alt='' aria-hidden='true'><div class='brand-text'><h1>Hospital Integral Kuxtal</h1></div></div></header>
+<div class='subbar'><div class='bar-inner'><nav><a href='/'>Inicio</a><a href='/registro'>Registro</a><a href='/login'>Iniciar sesión</a><a href='/mi-cuenta'>Mi cuenta</a><a href='/ajustes'>Ajustes</a><form method='post' action='/logout' style='display:inline'><button type='submit' style='margin:0;padding:4px 9px'>Cerrar sesión (R-01)</button></form></nav></div></div>
+<div class='breadcrumb'><div class='bar-inner'><a href='/'><img src='/assets/home.png' class='bc-home' alt='' aria-hidden='true'> Inicio</a><span class='sep'>&rsaquo;</span><span>Mi cuenta</span></div></div>
+<main><h2>Mi cuenta</h2><p><strong>Derecho de Acceso (ARCO):</strong> estos son los datos personales registrados en tu cuenta (<code>R-01</code>).</p><div class='tabla-scroll'><table><thead><tr><th>Id</th><th>Nombre</th><th>Email</th><th>FechaNacimiento</th><th>Telefono</th><th>Jurisdiccion</th><th>AseguradoraPoliza</th><th>MotivoAlergias</th><th>Consentimiento</th><th>FechaConsentimiento</th><th>VersionAviso</th><th>FechaRegistro</th></tr></thead><tbody><tr><td>1f5c0afe-dcb1-4d32-8ff9-488ff6220f26</td><td>Sergio Aguilar Cetina</td><td>sergio.aguilar1@correo.example</td><td>1975-06-06</td><td>555-010-0001</td><td>M&#233;xico</td><td>P&#243;liza Turista Gamma POL-FIC-9080</td><td>Consulta dental est&#233;tica | Alergias: L&#225;tex</td><td>True</td><td>2026-11-26T00:59:59.6828764-06:00</td><td>v1.0 (2026-11-25)</td><td>2026-11-26T00:59:59.6828764-06:00</td></tr></tbody></table></div><p><a href='/ajustes#arco'>Ejercer derechos ARCO (rectificar o eliminar)</a> | <a href='/ajustes'>Cambiar contraseña</a></p>
+<footer>Información ficticia para fines de demostración. Aviso de privacidad: v1.0 (2026-11-25).</footer></main></body></html>
