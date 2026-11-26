@@ -10,7 +10,7 @@ $UsersCsv = Join-Path $DataPath "users.csv"
 $AccessLogCsv = Join-Path $DataPath "access_log.csv"
 $EncabezadoUsuarios = "Id,Nombre,Email,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias,Consentimiento,FechaConsentimiento,VersionAviso,FechaRegistro"
 $EncabezadoAccesos = "Fecha,Evento,Ruta,Exito,Nivel,IPAnonimizada"
-$PrivacyPolicyVer = "v1.0 (2026-11-25)"
+$PrivacyPolicyVer = "v2.1 (2026-11-26)"
 $IteracionesPbkdf2 = 600000
 
 function Ahora { (Get-Date -Format 'o') }

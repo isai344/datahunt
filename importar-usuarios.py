@@ -13,7 +13,7 @@ existentes = list(csv.DictReader(users.open(encoding="utf-8-sig", newline="")))
 por_correo = {fila["Email"].lower() for fila in existentes}
 
 ahora = datetime.now(timezone.utc).isoformat()
-version = "v1.0 (2026-11-25)"
+version = "v2.1 (2026-11-26)"
 nuevos = []
 for fila in entrada:
     correo = fila["Email"].lower()

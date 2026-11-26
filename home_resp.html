@@ -2,15 +2,15 @@
 <title>Inicio - Hospital Integral Kuxtal</title><style>
 :root{
   color-scheme:light;
-  --maroon:#7a1537; --maroon-dark:#4a0e22; --maroon-darker:#33081790;
-  --teal:#149a92; --teal-dark:#0d756f;
-  --bg:#f3f1f2; --surface:#ffffff; --surface-alt:#f6f7f8;
-  --border:#e1dee0;
-  --text:#262223; --text-muted:#6b6467;
-  --ok:#116b2a; --ok-bg:#e8f7ec; --ok-border:#8fd4a4;
-  --err:#a11212; --err-bg:#fdecec; --err-border:#f1b3b3;
-  --warn:#8a5a00; --warn-bg:#fff6e5; --warn-border:#f0cf8a;
-  --radius:10px; --shadow:0 2px 10px rgba(0,0,0,.08);
+  --maroon:#2e4a33; --maroon-dark:#203727; --maroon-darker:#17291dcc;
+  --teal:#7a4b2a; --teal-dark:#5e3720;
+  --bg:#f4f1e5; --surface:#fffdf4; --surface-alt:#f0ecdd;
+  --border:#dad4c2;
+  --text:#222b20; --text-muted:#6b6658;
+  --ok:#2f6b3a; --ok-bg:#e9f3e7; --ok-border:#a6cf9f;
+  --err:#8d3327; --err-bg:#f9eae6; --err-border:#e6b2a7;
+  --warn:#8a6420; --warn-bg:#fbf2dd; --warn-border:#e3c98e;
+  --radius:10px; --shadow:0 2px 10px rgba(0,0,0,.10);
 }
 *{box-sizing:border-box}
 body{
@@ -21,8 +21,8 @@ body{
 header.topbar{background:var(--maroon);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08)}
 header.topbar .bar-inner{display:flex;align-items:center;gap:14px;padding:14px 24px}
 .brand-mark{
-  width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;
-  border:2px solid rgba(255,255,255,.55);background:#fff;
+  width:52px;height:52px;object-fit:contain;flex-shrink:0;
+  background:transparent;filter:brightness(2.35) saturate(1.15);
 }
 .brand-text h1{margin:0;font-size:20px;font-weight:800;line-height:1.25;letter-spacing:.2px}
 .subbar{background:var(--maroon-dark);border-bottom:3px solid var(--teal)}
@@ -54,7 +54,7 @@ a{color:var(--teal-dark)}
 main a{color:var(--teal-dark);font-weight:600;text-decoration:none}
 main a:hover{text-decoration:underline}
 .hero{
-  background:linear-gradient(120deg,var(--teal) 0%,var(--teal-dark) 100%);color:#fff;
+  background:linear-gradient(120deg,var(--maroon) 0%,var(--maroon-dark) 100%);color:#fff;
   border-radius:16px;padding:26px 30px;margin:4px 0 24px;box-shadow:var(--shadow);
 }
 .hero h3{color:#fff;font-size:22px;margin:0 0 8px}
@@ -74,7 +74,7 @@ input,select,textarea{
   background:var(--surface);transition:border-color .15s ease,box-shadow .15s ease;
 }
 input:focus,select:focus,textarea:focus{
-  outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(20,154,146,.18);
+  outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(122,75,42,.20);
 }
 textarea{min-height:92px;max-width:640px;resize:vertical}
 input[type=checkbox],input[type=radio]{
@@ -104,7 +104,7 @@ table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0;overflo
 th,td{border-bottom:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top}
 th{background:var(--maroon-dark);color:#fff;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
 tbody tr:nth-child(even){background:var(--surface-alt)}
-tbody tr:hover{background:#f0eceb}
+tbody tr:hover{background:#eae4d2}
 code{word-break:break-all;background:var(--surface-alt);padding:2px 6px;border-radius:5px;font-size:.9em;color:var(--maroon-dark)}
 footer{color:var(--text-muted);font-size:12px;margin-top:30px;padding-top:16px;border-top:1px solid var(--border)}
 section#arco{margin-top:4px}
@@ -116,7 +116,7 @@ section#arco{margin-top:4px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body>
-<header class='topbar'><div class='bar-inner'><img src='/assets/cruz.png' class='brand-mark' alt='' aria-hidden='true'><div class='brand-text'><h1>Hospital Integral Kuxtal</h1></div></div></header>
+<header class='topbar'><div class='bar-inner'><img src='/assets/kuxtal_logo.png' class='brand-mark' alt='' aria-hidden='true'><div class='brand-text'><h1>Hospital Integral Kuxtal</h1></div></div></header>
 <div class='subbar'><div class='bar-inner'><nav><a href='/'>Inicio</a><a href='/registro'>Registro</a><a href='/login'>Iniciar sesión</a></nav></div></div>
 <div class='breadcrumb'><div class='bar-inner'><a href='/'><img src='/assets/home.png' class='bc-home' alt='' aria-hidden='true'> Inicio</a></div></div>
 <main><h2>Inicio</h2><div class='hero'><h3>Bienvenido a Hospital Integral Kuxtal</h3><p>Consulta información relevante de tu atención y realiza tu pre-registro como paciente.</p></div><div class='card-grid'><a href='/registro'><img src='/assets/registro.png' alt='' aria-hidden='true'>Pre-registro</a><a href='/login'><img src='/assets/login.png' alt='' aria-hidden='true'>Iniciar sesión</a><a href='#aviso-privacidad'><img src='/assets/privacidad.png' alt='' aria-hidden='true'>Aviso de privacidad</a></div><hr><section id='aviso-privacidad'><h2>Aviso de privacidad integral</h2><h3>1. Identidad y domicilio del responsable</h3>
@@ -136,5 +136,5 @@ section#arco{margin-top:4px}
 <h3>8. Conservación y seguridad</h3>
 <p>Los registros se conservan únicamente durante el periodo de atención y se eliminan al solicitarlo. Aplicamos PBKDF2 con sal, comparación en tiempo constante, sesiones HttpOnly/SameSite=Strict, ACL restrictiva en los archivos, anonimización de IP y registro de eventos sin datos personales.</p>
 <h3>9. Cambios al aviso</h3>
-<p>Cualquier cambio se publica en esta misma página y se actualiza la versión del aviso; el consentimiento se vuelve a solicitar cuando el cambio es sustantivo. Versión vigente: v1.0 (2026-11-25).</p></section>
-<footer>Información ficticia para fines de demostración. Aviso de privacidad: v1.0 (2026-11-25).</footer></main></body></html>
+<p>Cualquier cambio se publica en esta misma página y se actualiza la versión del aviso; el consentimiento se vuelve a solicitar cuando el cambio es sustantivo. Versión vigente: v2.1 (2026-11-26).</p></section>
+<footer>Información ficticia para fines de demostración. Aviso de privacidad: v2.1 (2026-11-26).</footer></main></body></html>
