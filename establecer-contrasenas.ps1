@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $UsersCsv = Join-Path $DataPath "users.csv"
 $AccessLogCsv = Join-Path $DataPath "access_log.csv"
-$EncabezadoUsuarios = "Id,Nombre,Email,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias,Consentimiento,FechaConsentimiento,VersionAviso,FechaRegistro"
+$EncabezadoUsuarios = "Id,Nombre,Email,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias,Consentimiento,FechaConsentimiento,VersionAviso,FechaRegistro,TotpSecret,TotpActivado"
 $EncabezadoAccesos = "Fecha,Evento,Ruta,Exito,Nivel,IPAnonimizada"
 $EncabezadoEntrada = "Nombre,Email,Password,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias"
 $IteracionesPbkdf2 = 600000

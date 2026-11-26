@@ -17,6 +17,7 @@ $AppVersion       = "v4"
 $DataPath         = "C:\DataHunt"
 $UsersCsv         = Join-Path $DataPath "users.csv"
 $AccessLogCsv     = Join-Path $DataPath "access_log.csv"
+$ArcoSolicitudesCsv = Join-Path $DataPath "arco_solicitudes.csv"
 $PrivacyPolicyVer = "v2.1 (2026-11-26)"
 
 $Direccion = "+"
@@ -32,19 +33,21 @@ $MaxBodyBytes        = 65536
 $IteracionesPbkdf2   = 600000
 $CookieSesion        = "kuxtal_sid"
 
-# CORRECCIÓN H-02: RBAC según matriz de roles (R-01 Paciente, R-02 Admisión, R-03 TI, R-04 DPO, R-05 Médico, R-06 Facturación).
+# CORRECCIÓN H-02: RBAC según matriz de roles (R-01 Paciente, R-02 Admisión, R-03 TI, R-04 DPO, R-05 Médico, R-06 Facturación, R-07 Privacidad).
 # Para promover una cuenta, agregar su correo a la tabla.
 $RolesAdmin = @("R-02", "R-03", "R-04", "R-05", "R-06")
 $RolesAuditoria = @("R-03", "R-04")
+$RolPrivacidad = "R-07"
 # CORRECCIÓN H-02/C-13: verificación en dos pasos (TOTP) obligatoria para las cuentas privilegiadas
-# DPO (R-04), TI/administración (R-03) y Admisión (R-02), conforme al Anexo A.5 del aviso de privacidad.
-$RolesConMfa = @("R-02", "R-03", "R-04")
+# DPO (R-04), TI/administración (R-03), Admisión (R-02) y Oficina de Privacidad (R-07), conforme al Anexo A.5 del aviso de privacidad.
+$RolesConMfa = @("R-02", "R-03", "R-04", "R-07")
 $RolesPorEmail = @{
     "admin@kuxtal.test"       = "R-03"
     "dpo@kuxtal.test"         = "R-04"
     "admision@kuxtal.test"    = "R-02"
     "medico@kuxtal.test"      = "R-05"
     "facturacion@kuxtal.test" = "R-06"
+    "privacidad@kuxtal.test"  = "R-07"
     "rmedinal@kuxtal.example" = "R-02"
     "meuanp@kuxtal.example"   = "R-05"
     "vherrerap@kuxtal.example" = "R-06"
@@ -52,6 +55,7 @@ $RolesPorEmail = @{
 
 $EncabezadoUsuarios = "Id,Nombre,Email,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias,Consentimiento,FechaConsentimiento,VersionAviso,FechaRegistro,TotpSecret,TotpActivado"
 $EncabezadoAccesos  = "Fecha,Evento,Ruta,Exito,Nivel,IPAnonimizada"
+$EncabezadoArco     = "Id,EmailSolicitante,NombreSolicitante,Derecho,Motivo,Estado,FechaSolicitud,FechaResolucion,Resolutor,Decision,DetalleResolucion"
 
 # CORRECCIÓN H-07: selector jurisdiccional D-06.
 $Jurisdicciones = [ordered]@{
@@ -124,7 +128,7 @@ function Probar-Contrasena([string]$contrasena, [string]$guardado) {
 
 # ------------------------------------------------------------------------------
 # 2-bis. VERIFICACIÓN EN DOS PASOS (TOTP, RFC 6238 / RFC 4226) - compatible con Google Authenticator.
-# Solo se exige a las cuentas privilegiadas (R-02 Admisión, R-03 TI, R-04 DPO). Ver $RolesConMfa.
+# Solo se exige a las cuentas privilegiadas (R-02 Admisión, R-03 TI, R-04 DPO, R-07 Privacidad). Ver $RolesConMfa.
 # ------------------------------------------------------------------------------
 $script:Base32Alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
@@ -238,9 +242,13 @@ function Inicializar-Csv {
     if (-not (Test-Path -LiteralPath $AccessLogCsv)) {
         Set-Content -LiteralPath $AccessLogCsv -Value $EncabezadoAccesos -Encoding utf8
     }
+    if (-not (Test-Path -LiteralPath $ArcoSolicitudesCsv)) {
+        Set-Content -LiteralPath $ArcoSolicitudesCsv -Value $EncabezadoArco -Encoding utf8
+    }
     Migrar-ColumnasUsuarios
     Set-ProteccionArchivo $UsersCsv
     Set-ProteccionArchivo $AccessLogCsv
+    Set-ProteccionArchivo $ArcoSolicitudesCsv
 }
 
 # Agrega TotpSecret/TotpActivado a un users.csv creado antes de la verificación en dos pasos.
@@ -356,6 +364,12 @@ function Get-Rol([string]$email) {
     return "R-01"
 }
 
+function Get-DestinoInicio([string]$rol) {
+    if ($rol -eq $RolPrivacidad) { return "/privacidad" }
+    if ($rol -in $RolesAdmin) { return "/admin" }
+    return "/mi-cuenta"
+}
+
 # CORRECCIÓN H-04: cookies HttpOnly + SameSite=Strict y Secure cuando hay TLS.
 function Test-EsSeguro($ctx) {
     if ($ctx.Request.IsSecureConnection) { return $true }
@@ -387,6 +401,15 @@ function Cerrar-Sesion($ctx) {
     if ($token) { $Sesiones.Remove($token) | Out-Null }
     $seguro = if (Test-EsSeguro $ctx) { "; Secure" } else { "" }
     Set-Header $ctx "Set-Cookie" "$CookieSesion=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict$seguro"
+}
+
+function Cerrar-Sesiones-De([string]$email) {
+    foreach ($token in @($Sesiones.Keys)) {
+        if ($Sesiones[$token].Email -ieq $email) { $Sesiones.Remove($token) | Out-Null }
+    }
+    foreach ($token in @($PendientesMfa.Keys)) {
+        if ($PendientesMfa[$token].Email -ieq $email) { $PendientesMfa.Remove($token) | Out-Null }
+    }
 }
 
 # CORRECCIÓN H-03: bitacora estructurada SOLO con eventos operativos, sin PII.
@@ -652,9 +675,11 @@ section#arco{margin-top:4px}
 
 function Nueva-Pagina([string]$titulo, [string]$contenido, $ctx = $null) {
     $nonce = Nuevo-Nonce
-    $nav = "<a href='/'>Inicio</a><a href='/registro'>Registro</a><a href='/login'>Iniciar sesión</a>"
     $sesion = if ($ctx) { Get-SesionActual $ctx } else { $null }
+    $nav = "<a href='/'>Inicio</a>"
+    if (-not $sesion) { $nav += "<a href='/registro'>Registro</a><a href='/login'>Iniciar sesión</a>" }
     if ($sesion -and $sesion.Rol -in $RolesAdmin) { $nav += "<a href='/admin'>Administración</a>" }
+    if ($sesion -and $sesion.Rol -eq $RolPrivacidad) { $nav += "<a href='/privacidad'>Privacidad</a>" }
     if ($sesion) {
         $nav += "<a href='/mi-cuenta'>Mi cuenta</a><a href='/ajustes'>Ajustes</a>"
         $nav += "<form method='post' action='/logout' style='display:inline'><button type='submit' style='margin:0;padding:4px 9px'>Cerrar sesión ($(Escapar $sesion.Rol))</button></form>"
@@ -689,7 +714,7 @@ $alerta<form method='post' action='/login'>
 "@
 }
 
-# CORRECCIÓN H-02/C-13: segundo factor (TOTP) para R-02, R-03 y R-04. $esNuevo=true la primera vez
+# CORRECCIÓN H-02/C-13: segundo factor (TOTP) para R-02, R-03, R-04 y R-07. $esNuevo=true la primera vez
 # que esa cuenta inicia sesión (todavía no tiene secreto guardado): hay que enrolarla primero.
 function Formulario-Mfa([string]$token, [bool]$esNuevo, [string]$secreto = "", [string]$mensaje = "") {
     $alerta = if ($mensaje) { "<p class='err'>$(Escapar $mensaje)</p>" } else { "" }
@@ -716,23 +741,31 @@ function Seccion-Arco($usuario, [string]$email) {
     if ($null -eq $usuario) {
         return "<hr><section id='arco'><h3>Derechos ARCO</h3><p>Tu cuenta no tiene un registro de paciente asociado en <code>users.csv</code>.</p></section>"
     }
+    $solicitudes = @(Leer-Csv $ArcoSolicitudesCsv | Where-Object { $_.EmailSolicitante -ieq $email })
+    $historial = if ($solicitudes.Count -gt 0) {
+        $filas = @($solicitudes | Select-Object -Property Id, Derecho, Estado, FechaSolicitud, FechaResolucion, Decision, DetalleResolucion)
+        Tabla-Html $filas @("Id", "Derecho", "Estado", "FechaSolicitud", "FechaResolucion", "Decision", "DetalleResolucion")
+    } else {
+        "<p>Aún no has enviado solicitudes ARCO.</p>"
+    }
     return @"
 <hr><section id='arco'>
-<h3>Derechos ARCO (Rectificación, Cancelación y Oposición)</h3>
-<p>Ejerce tus derechos <strong>ARCO</strong> (LFPDPPP 2025 / GDPR / CCPA) sobre tu cuenta autenticada. Para consultar tus datos completos ve a <a href='/mi-cuenta'>Mi cuenta</a>.</p>
-<h4>Rectificación de datos</h4>
+<h3>Derechos ARCO (Acceso, Rectificación, Cancelación y Oposición)</h3>
+<p>Ejerce tus derechos <strong>ARCO</strong> (LFPDPPP 2025 / GDPR / CCPA) sobre tu cuenta autenticada. Para consultar tus datos completos ve a <a href='/mi-cuenta'>Mi cuenta</a>. Tu solicitud se envía al Departamento de Privacidad, que valida tu identidad y decide entre eliminar tus datos, entregarte un reporte o rechazar la petición con motivo.</p>
 <form method='post' action='/ajustes'>
+<input type='hidden' name='accion' value='solicitar_arco'>
 <input type='hidden' name='email' value='$(Escapar $email)'>
-<label>Nombre completo <input type='text' name='nombre' maxlength='120' value='$(Escapar $usuario.Nombre)' required></label>
-<label>Teléfono <input type='tel' name='telefono' maxlength='20' value='$(Escapar $usuario.Telefono)' required></label>
-<label>Aseguradora y póliza <input type='text' name='aseguradora_poliza' maxlength='200' value='$(Escapar $usuario.AseguradoraPoliza)' required></label>
-<label>Motivo de consulta y alergias <textarea name='motivo_alergias' maxlength='1000' required>$(Escapar $usuario.MotivoAlergias)</textarea></label>
-<button type='submit' name='accion' value='rectificar'>Guardar rectificación</button></form>
-<h4>Cancelación u oposición</h4>
-<p>Esta acción elimina tus datos de pre-registro de Data Hunt y cierra tu sesión.</p>
-<form method='post' action='/ajustes'>
-<label>Correo de la cuenta <input type='email' name='email' value='$(Escapar $email)' readonly></label>
-<button type='submit' name='accion' value='cancelar'>Cancelar / oponerme al tratamiento y eliminar mis datos</button></form>
+<label>Derecho que deseas ejercer
+<select name='derecho' required>
+<option value='Acceso'>Acceso</option>
+<option value='Rectificación'>Rectificación</option>
+<option value='Cancelación'>Cancelación</option>
+<option value='Oposición'>Oposición</option>
+</select></label>
+<label>Motivo de la solicitud <textarea name='motivo' maxlength='500' required></textarea></label>
+<button type='submit'>Enviar solicitud al Departamento de Privacidad</button></form>
+<h4>Seguimiento de tus solicitudes</h4>
+$historial
 </section>
 "@
 }
@@ -767,7 +800,7 @@ function Pagina-Privacidad {
 <h3>4. Transferencias y encargados</h3>
 <p>Encargados que tratan datos por nuestra cuenta, bajo contrato de confidencialidad: Amazon Web Services (copias cifradas de respaldo, posiblemente fuera de México), un laboratorio clínico externo y un proveedor de soporte de TI. Transferimos tu nombre, aseguradora y número de póliza a <strong>tu aseguradora</strong> únicamente si diste tu consentimiento, para gestionar el cobro de tu atención; si no lo autorizas, te facturamos directamente. Podemos comunicar datos sin tu consentimiento cuando lo exija una ley, una autoridad competente o tu propia atención médica bajo secreto profesional.</p>
 <h3>5. Derechos ARCO y revocación</h3>
-<p>Puedes acceder, rectificar, cancelar u oponerte al tratamiento (ARCO), así como revocar tu consentimiento o limitar su uso, desde <a href='/ajustes#arco'>el apartado de derechos ARCO en Ajustes</a> o escribiendo a {CONTACTO}. Respondemos en un máximo de 20 días hábiles y, si procede, lo hacemos efectivo en los 15 días siguientes; ambos plazos pueden ampliarse una vez por un periodo igual. El ejercicio de tus derechos es gratuito, salvo costos de reproducción o envío. Tu expediente clínico no puede cancelarse antes del plazo que fija la norma sanitaria (NOM-004-SSA3-2012); mientras tanto se bloquea y solo lo consulta personal autorizado.</p>
+<p>Puedes acceder, rectificar, cancelar u oponerte al tratamiento (ARCO), así como revocar tu consentimiento o limitar su uso, desde <a href='/ajustes#arco'>el apartado de derechos ARCO en Ajustes</a> o escribiendo a {CONTACTO}. Tu solicitud se registra con un folio y pasa al Departamento de Privacidad (R-07), que valida tu identidad y resuelve si procede eliminar tus datos, entregarte un reporte o rechazar la petición con un motivo. Respondemos en un máximo de 20 días hábiles y, si procede, lo hacemos efectivo en los 15 días siguientes; ambos plazos pueden ampliarse una vez por un periodo igual. El ejercicio de tus derechos es gratuito, salvo costos de reproducción o envío. Tu expediente clínico no puede cancelarse antes del plazo que fija la norma sanitaria (NOM-004-SSA3-2012); mientras tanto se bloquea y solo lo consulta personal autorizado.</p>
 <h3>6. Menores de edad o personas con incapacidad</h3>
 <p>Si el paciente es menor de 18 años o tiene una incapacidad legal, su madre, padre o tutor realiza el pre-registro, otorga los consentimientos y ejerce los derechos ARCO en su nombre, acreditando su identidad y su representación.</p>
 <h3>7. GDPR (pacientes de la Unión Europea)</h3>
@@ -777,7 +810,7 @@ function Pagina-Privacidad {
 <h3>9. HIPAA (pacientes de Estados Unidos)</h3>
 <p>Si resides en Estados Unidos, el hospital es una entidad cubierta por la ley federal HIPAA porque factura electrónicamente a aseguradoras de ese país. Podemos usar y divulgar tu información para tu tratamiento, el pago de tu atención (por ejemplo a tu aseguradora) y las operaciones del hospital, sin necesitar tu autorización adicional; cualquier otro uso, como mercadotecnia, requiere tu autorización por escrito y puedes revocarla en cualquier momento. Puedes pedir restricciones sobre el uso de tu información, recibir comunicaciones confidenciales por otro medio, ver y recibir copia de tu expediente (respondemos en 30 días, ampliables 30 más), pedir que se corrija (60 días, ampliables 30 más) y recibir un informe de las divulgaciones que hicimos (60 días). Contacto del oficial de privacidad: {CONTACTO}. Si crees que violamos tus derechos, puedes presentar una queja ante nosotros o ante la Oficina de Derechos Civiles del Departamento de Salud y Servicios Humanos de EE. UU. (HHS), sin que haya represalias por hacerlo.</p>
 <h3>10. Cómo protegemos tus datos</h3>
-<p>Cifrado de los archivos con tus datos y verificación de su integridad; contraseñas con hash PBKDF2-SHA256 y sal, comparadas en tiempo constante; sesiones HttpOnly y SameSite=Strict; ACL restrictiva en los archivos; anonimización de IP; bitácora de eventos sin datos personales. El acceso es por roles, con el mínimo de permisos necesarios, y <strong>verificación en dos pasos obligatoria</strong> para las cuentas con más privilegios (Admisión, TI/Administración y la DPO). Si ocurre una vulneración que afecte de forma significativa tus derechos, te lo informaremos de inmediato.</p>
+<p>Cifrado de los archivos con tus datos y verificación de su integridad; contraseñas con hash PBKDF2-SHA256 y sal, comparadas en tiempo constante; sesiones HttpOnly y SameSite=Strict; ACL restrictiva en los archivos; anonimización de IP; bitácora de eventos sin datos personales. El acceso es por roles, con el mínimo de permisos necesarios, y <strong>verificación en dos pasos obligatoria</strong> para las cuentas con más privilegios (Admisión, TI/Administración, la DPO y la Oficina de Privacidad). Si ocurre una vulneración que afecte de forma significativa tus derechos, te lo informaremos de inmediato.</p>
 <h3>11. Cambios al aviso</h3>
 <p>Cualquier cambio se publica en esta misma página con su número de versión y su fecha, y se solicita de nuevo el consentimiento cuando el cambio es sustantivo. Versión vigente: {VERSION}.</p>
 '@
@@ -812,10 +845,20 @@ foreach ($rutaAsset in $Assets.Keys) {
 
 $Rutas["/"] = {
     param($ctx)
-    $contenido = "<div class='hero'><h3>Bienvenido a $(Escapar $CompanyName)</h3><p>Consulta información relevante de tu atención y realiza tu pre-registro como paciente.</p></div>"
+    $sesion = Get-SesionActual $ctx
+    $contenido = if ($sesion) {
+        "<div class='hero'><h3>Bienvenido a $(Escapar $CompanyName)</h3><p>Consulta información relevante de tu atención desde tu cuenta.</p></div>"
+    } else {
+        "<div class='hero'><h3>Bienvenido a $(Escapar $CompanyName)</h3><p>Consulta información relevante de tu atención y realiza tu pre-registro como paciente.</p></div>"
+    }
     $contenido += "<div class='card-grid'>"
-    $contenido += "<a href='/registro'><img src='/assets/registro.png' alt='' aria-hidden='true'>Pre-registro</a>"
-    $contenido += "<a href='/login'><img src='/assets/login.png' alt='' aria-hidden='true'>Iniciar sesión</a>"
+    if ($sesion) {
+        $contenido += "<a href='/mi-cuenta'><img src='/assets/home.png' alt='' aria-hidden='true'>Mi cuenta</a>"
+        $contenido += "<a href='/ajustes'><img src='/assets/home.png' alt='' aria-hidden='true'>Ajustes</a>"
+    } else {
+        $contenido += "<a href='/registro'><img src='/assets/registro.png' alt='' aria-hidden='true'>Pre-registro</a>"
+        $contenido += "<a href='/login'><img src='/assets/login.png' alt='' aria-hidden='true'>Iniciar sesión</a>"
+    }
     $contenido += "<a href='#aviso-privacidad'><img src='/assets/privacidad.png' alt='' aria-hidden='true'>Aviso de privacidad</a>"
     $contenido += "</div>"
     $contenido += "<hr><section id='aviso-privacidad'><h2>Aviso de privacidad integral</h2>$(Pagina-Privacidad)</section>"
@@ -1011,7 +1054,7 @@ $Rutas["/login"] = {
     # CORRECCIÓN H-02: la sesion autenticada determina el rol para /admin o /mi-cuenta.
     $rol = Get-Rol $usuario[0].Email
 
-    # CORRECCIÓN H-02/C-13: segundo factor obligatorio para cuentas privilegiadas (R-02, R-03, R-04).
+    # CORRECCIÓN H-02/C-13: segundo factor obligatorio para cuentas privilegiadas (R-02, R-03, R-04, R-07).
     if ($rol -in $RolesConMfa) {
         $secretoGuardado = ""
         if ($usuario[0].PSObject.Properties['TotpSecret']) { $secretoGuardado = $usuario[0].TotpSecret }
@@ -1029,7 +1072,7 @@ $Rutas["/login"] = {
     }
 
     Nueva-Sesion $ctx $usuario[0].Email $rol $autoriza | Out-Null
-    $destino = if ($rol -in $RolesAdmin) { "/admin" } else { "/mi-cuenta" }
+    $destino = Get-DestinoInicio $rol
     Redirigir $ctx $destino
 }
 
@@ -1080,7 +1123,7 @@ $Rutas["/login-verificar"] = {
 
     $PendientesMfa.Remove($token) | Out-Null
     Nueva-Sesion $ctx $pendiente.Email $pendiente.Rol $pendiente.Metadatos | Out-Null
-    $destino = if ($pendiente.Rol -in $RolesAdmin) { "/admin" } else { "/mi-cuenta" }
+    $destino = Get-DestinoInicio $pendiente.Rol
     Redirigir $ctx $destino
 }
 
@@ -1123,48 +1166,43 @@ $Rutas["/ajustes"] = {
     foreach ($clave in @($form.Keys)) { $form[$clave] = (($form[$clave] -replace '[\r\n]+', ' ')).Trim() }
 
     $accion = if ($form.ContainsKey("accion")) { $form["accion"] } else { "password" }
-    if ($accion -in @("rectificar", "cancelar")) {
+    if ($accion -eq "solicitar_arco") {
         if ($null -eq $u) {
             Enviar $ctx (Pagina-Error "Cuenta no encontrada" "No se encontró el registro de tu cuenta." $ctx) 404
             return
         }
         $email = if ($form.ContainsKey("email")) { $form["email"] } else { "" }
         if ($email -ine $sesion.Email) {
-            Registrar-Evento $ctx "ARCO_RECHAZADO" "/ajustes" $false "WARN"
+            Registrar-Evento $ctx "ARCO_SOLICITUD_RECHAZADA" "/ajustes" $false "WARN"
             Enviar $ctx (Pagina-Error "Solicitud rechazada" "Solo puedes ejercer derechos sobre tu propia cuenta." $ctx) 403
             return
         }
-        if ($accion -eq "rectificar") {
-            $nombre = if ($form.ContainsKey("nombre")) { $form["nombre"] } else { "" }
-            $telefono = if ($form.ContainsKey("telefono")) { $form["telefono"] } else { "" }
-            $poliza = if ($form.ContainsKey("aseguradora_poliza")) { $form["aseguradora_poliza"] } else { "" }
-            $motivo = if ($form.ContainsKey("motivo_alergias")) { $form["motivo_alergias"] } else { "" }
-            if ([string]::IsNullOrWhiteSpace($nombre) -or $nombre.Length -gt 120 -or
-                $telefono -notmatch '^[0-9+\-() ]{7,20}$' -or
-                [string]::IsNullOrWhiteSpace($poliza) -or $poliza.Length -gt 200 -or
-                [string]::IsNullOrWhiteSpace($motivo) -or $motivo.Length -gt 1000) {
-                Registrar-Evento $ctx "ARCO_RECTIFICACION_RECHAZADA" "/ajustes" $false "WARN"
-                Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes "Revisa los campos de rectificación e inténtalo de nuevo." $true $u $sesion.Email) $ctx) 400
-                return
-            }
-            $u.Nombre = $nombre
-            $u.Telefono = $telefono
-            $u.AseguradoraPoliza = $poliza
-            $u.MotivoAlergias = $motivo
-            Escribir-Csv $UsersCsv $EncabezadoUsuarios $usuarios
-            Registrar-Evento $ctx "ARCO_RECTIFICACION_OK" "/ajustes" $true
-            Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes "Tu solicitud de rectificación ARCO fue aplicada correctamente." $false $u $sesion.Email) $ctx)
+        $derecho = if ($form.ContainsKey("derecho")) { $form["derecho"] } else { "" }
+        $motivo = if ($form.ContainsKey("motivo")) { $form["motivo"] } else { "" }
+        $derechosValidos = @("Acceso", "Rectificación", "Cancelación", "Oposición")
+        if ($derecho -notin $derechosValidos -or [string]::IsNullOrWhiteSpace($motivo) -or $motivo.Length -gt 500) {
+            Registrar-Evento $ctx "ARCO_SOLICITUD_RECHAZADA" "/ajustes" $false "WARN"
+            Enviar $ctx (Nueva-Pagina "Ajustes de la cuenta" (Formulario-Ajustes "Revisa el derecho solicitado y el motivo (máximo 500 caracteres)." $true $u $sesion.Email) $ctx) 400
             return
         }
-
-        $resto = @($usuarios | Where-Object { $_.Email -ine $email })
-        Escribir-Csv $UsersCsv $EncabezadoUsuarios $resto
-        $MetadatosAutorizados.Remove($email.ToLowerInvariant()) | Out-Null
-        Registrar-Evento $ctx "ARCO_CANCELACION_OK" "/ajustes" $true
-        Cerrar-Sesion $ctx
-        $html = "<p class='ok'>Tu solicitud de cancelación/oposición fue registrada, los datos fueron eliminados y tu sesión se cerró.</p>"
-        $html += "<p><a href='/'>Volver al inicio</a></p>"
-        Enviar $ctx (Nueva-Pagina "Solicitud ARCO atendida" $html $ctx)
+        $solicitud = [ordered]@{
+            Id                = [guid]::NewGuid().ToString()
+            EmailSolicitante  = $sesion.Email
+            NombreSolicitante = $u.Nombre
+            Derecho           = $derecho
+            Motivo            = $motivo
+            Estado            = "PENDIENTE"
+            FechaSolicitud    = Ahora
+            FechaResolucion   = ""
+            Resolutor         = ""
+            Decision          = ""
+            DetalleResolucion = ""
+        }
+        Agregar-Csv $ArcoSolicitudesCsv $solicitud
+        Registrar-Evento $ctx "ARCO_SOLICITUD_CREADA" "/ajustes" $true
+        $html = "<p class='ok'>Tu solicitud fue enviada al Departamento de Privacidad. Folio: <code>$(Escapar $solicitud.Id)</code>. Podrás ver el estado en el apartado de derechos ARCO.</p>"
+        $html += "<p><a href='/ajustes#arco'>Ver seguimiento de mis solicitudes</a></p>"
+        Enviar $ctx (Nueva-Pagina "Solicitud ARCO enviada" $html $ctx)
         return
     }
 
@@ -1199,6 +1237,178 @@ $Rutas["/ajustes"] = {
     $html = "<p class='ok'>Contraseña actualizada. Todas las sesiones de la cuenta fueron cerradas.</p>"
     $html += "<p><a href='/login'>Iniciar sesión de nuevo</a></p>"
     Enviar $ctx (Nueva-Pagina "Contraseña actualizada" $html $ctx)
+}
+
+function Exigir-SesionPrivacidad($ctx, [string]$ruta = "/privacidad") {
+    $sesion = Get-SesionActual $ctx
+    if (-not $sesion) {
+        Registrar-Evento $ctx "ACCESO_DENEGADO" $ruta $false "WARN"
+        Redirigir $ctx "/login"
+        return $null
+    }
+    if ($sesion.Rol -ne $RolPrivacidad) {
+        Registrar-Evento $ctx "ACCESO_DENEGADO" $ruta $false "WARN"
+        Enviar $ctx (Pagina-Error "403 Prohibido" "Tu rol no puede gestionar solicitudes ARCO." $ctx) 403
+        return $null
+    }
+    return $sesion
+}
+
+function Leer-Parametros-Consulta($ctx) {
+    $parametros = @{}
+    foreach ($par in ($ctx.Request.Url.Query.TrimStart('?') -split '&')) {
+        if (-not $par) { continue }
+        $partes = $par -split '=', 2
+        $clave = [System.Net.WebUtility]::UrlDecode($partes[0])
+        $valor = if ($partes.Count -gt 1) { [System.Net.WebUtility]::UrlDecode($partes[1]) } else { "" }
+        $parametros[$clave] = $valor
+    }
+    return $parametros
+}
+
+$Rutas["/privacidad"] = {
+    param($ctx)
+    $sesion = Exigir-SesionPrivacidad $ctx "/privacidad"
+    if (-not $sesion) { return }
+    if ($ctx.Request.HttpMethod -ne "GET") {
+        Enviar $ctx (Pagina-Error "Método no permitido" "Usa GET en esta ruta." $ctx) 405
+        return
+    }
+    Registrar-Evento $ctx "PRIVACIDAD_VIEW" "/privacidad" $true
+    $solicitudes = @(Leer-Csv $ArcoSolicitudesCsv)
+    $pendientes = @($solicitudes | Where-Object { $_.Estado -eq "PENDIENTE" })
+    $resueltas = @($solicitudes | Where-Object { $_.Estado -ne "PENDIENTE" })
+    $html = "<p>Bandeja del Departamento de Privacidad (<code>$(Escapar $RolPrivacidad)</code>). Revisa cada solicitud, confirma que validaste la identidad y elige la resolución.</p>"
+    $html += "<h3>Solicitudes pendientes</h3>"
+    if ($pendientes.Count -eq 0) {
+        $html += "<p>No hay solicitudes pendientes.</p>"
+    } else {
+        $html += "<div class='tabla-scroll'><table><thead><tr><th>Folio</th><th>Solicitante</th><th>Derecho</th><th>Motivo</th><th>Fecha</th><th>Resolución</th></tr></thead><tbody>"
+        foreach ($s in $pendientes) {
+            $id = Escapar $s.Id
+            $html += "<tr><td><code>$id</code></td><td>$(Escapar $s.NombreSolicitante)<br>$(Escapar $s.EmailSolicitante)</td><td>$(Escapar $s.Derecho)</td><td>$(Escapar $s.Motivo)</td><td>$(Escapar $s.FechaSolicitud)</td>"
+            $html += "<td><form method='post' action='/privacidad/resolver'>"
+            $html += "<input type='hidden' name='id' value='$id'>"
+            $html += "<label>Decisión <select name='decision' required><option value='eliminar'>Eliminar cuenta</option><option value='reporte'>Enviar reporte</option><option value='rechazar'>Rechazar petición</option></select></label>"
+            $html += "<label>Motivo de la resolución <textarea name='detalle' maxlength='500' required></textarea></label>"
+            $html += "<label><input type='checkbox' name='validado' value='1' required> Validé identidad y solicitud</label>"
+            $html += "<button type='submit'>Aplicar decisión</button></form></td></tr>"
+        }
+        $html += "</tbody></table></div>"
+    }
+    $html += "<h3>Solicitudes resueltas</h3>"
+    $html += Tabla-Html $resueltas @("Id", "EmailSolicitante", "Derecho", "Estado", "FechaResolucion", "Resolutor", "Decision", "DetalleResolucion")
+    Enviar $ctx (Nueva-Pagina "Bandeja de Privacidad" $html $ctx)
+}
+
+$Rutas["/privacidad/resolver"] = {
+    param($ctx)
+    $sesion = Exigir-SesionPrivacidad $ctx "/privacidad/resolver"
+    if (-not $sesion) { return }
+    if ($ctx.Request.HttpMethod -ne "POST") {
+        Enviar $ctx (Pagina-Error "Método no permitido" "Usa POST en esta ruta." $ctx) 405
+        return
+    }
+    $form = Leer-Formulario $ctx
+    foreach ($clave in @($form.Keys)) { $form[$clave] = (($form[$clave] -replace '[\r\n]+', ' ')).Trim() }
+    $id = if ($form.ContainsKey("id")) { $form["id"] } else { "" }
+    $decision = if ($form.ContainsKey("decision")) { $form["decision"] } else { "" }
+    $detalle = if ($form.ContainsKey("detalle")) { $form["detalle"] } else { "" }
+    $validado = if ($form.ContainsKey("validado")) { $form["validado"] } else { "" }
+    $decisiones = @("eliminar", "reporte", "rechazar")
+    if ([string]::IsNullOrWhiteSpace($id) -or $decision -notin $decisiones -or
+        [string]::IsNullOrWhiteSpace($detalle) -or $detalle.Length -gt 500 -or $validado -ne "1") {
+        Registrar-Evento $ctx "ARCO_RESOLUCION_RECHAZADA" "/privacidad/resolver" $false "WARN"
+        Enviar $ctx (Pagina-Error "Resolución no válida" "Confirma la validación, elige una decisión y escribe un motivo de hasta 500 caracteres." $ctx) 400
+        return
+    }
+    $solicitudes = @(Leer-Csv $ArcoSolicitudesCsv)
+    $indice = -1
+    for ($i = 0; $i -lt $solicitudes.Count; $i++) {
+        if ($solicitudes[$i].Id -eq $id -and $solicitudes[$i].Estado -eq "PENDIENTE") { $indice = $i; break }
+    }
+    if ($indice -lt 0) {
+        Enviar $ctx (Pagina-Error "Solicitud no encontrada" "El folio no existe o ya fue resuelto." $ctx) 404
+        return
+    }
+    $s = $solicitudes[$indice]
+    $usuarios = @(Leer-Csv $UsersCsv)
+    $u = @($usuarios | Where-Object { $_.Email -ieq $s.EmailSolicitante } | Select-Object -First 1)
+    $s.Estado = "RESUELTA"
+    $s.FechaResolucion = Ahora
+    $s.Resolutor = $sesion.Email
+    $s.Decision = $decision.ToUpperInvariant()
+    $s.DetalleResolucion = $detalle
+    $evento = ""
+    $mensaje = ""
+    if ($decision -eq "eliminar") {
+        if ($u.Count -eq 1) {
+            $resto = @($usuarios | Where-Object { $_.Email -ine $s.EmailSolicitante })
+            Escribir-Csv $UsersCsv $EncabezadoUsuarios $resto
+            $MetadatosAutorizados.Remove($s.EmailSolicitante.ToLowerInvariant()) | Out-Null
+            Cerrar-Sesiones-De $s.EmailSolicitante
+        }
+        $evento = "ARCO_RESOLUCION_ELIMINAR_OK"
+        $mensaje = "La cuenta del solicitante fue eliminada y sus sesiones cerradas."
+    } elseif ($decision -eq "reporte") {
+        $evento = "ARCO_RESOLUCION_REPORTE_OK"
+        $mensaje = "El reporte fue generado. <a href='/privacidad/reporte?id=$(Escapar $s.Id)'>Descargar reporte</a>."
+    } else {
+        $evento = "ARCO_RESOLUCION_RECHAZO_OK"
+        $mensaje = "La solicitud fue rechazada y el motivo quedó registrado para el solicitante."
+    }
+    Escribir-Csv $ArcoSolicitudesCsv $EncabezadoArco $solicitudes
+    Registrar-Evento $ctx $evento "/privacidad/resolver" $true
+    $html = "<p class='ok'>$mensaje</p><p><a href='/privacidad'>Volver a la bandeja</a></p>"
+    Enviar $ctx (Nueva-Pagina "Solicitud ARCO resuelta" $html $ctx)
+}
+
+$Rutas["/privacidad/reporte"] = {
+    param($ctx)
+    $sesion = Exigir-SesionPrivacidad $ctx "/privacidad/reporte"
+    if (-not $sesion) { return }
+    if ($ctx.Request.HttpMethod -ne "GET") {
+        Enviar $ctx (Pagina-Error "Método no permitido" "Usa GET en esta ruta." $ctx) 405
+        return
+    }
+    $parametros = Leer-Parametros-Consulta $ctx
+    $id = if ($parametros.ContainsKey("id")) { $parametros["id"] } else { "" }
+    if ($id -notmatch '^[0-9a-fA-F-]{36}$') {
+        Enviar $ctx (Pagina-Error "Folio no válido" "El folio de la solicitud no es válido." $ctx) 400
+        return
+    }
+    $s = @(Leer-Csv $ArcoSolicitudesCsv | Where-Object { $_.Id -eq $id -and $_.Decision -eq "REPORTE" } | Select-Object -First 1)
+    if ($s.Count -ne 1) {
+        Enviar $ctx (Pagina-Error "Reporte no disponible" "No existe una resolución de reporte para ese folio." $ctx) 404
+        return
+    }
+    $datos = $s[0]
+    $u = @(Leer-Csv $UsersCsv | Where-Object { $_.Email -ieq $datos.EmailSolicitante } | Select-Object -First 1)
+    $fila = [ordered]@{
+        Folio              = $datos.Id
+        Nombre             = if ($u.Count -eq 1) { $u[0].Nombre } else { $datos.NombreSolicitante }
+        Correo             = $datos.EmailSolicitante
+        Derecho            = $datos.Derecho
+        Motivo             = $datos.Motivo
+        EstadoResolucion   = $datos.Estado
+        FechaSolicitud     = $datos.FechaSolicitud
+        FechaResolucion    = $datos.FechaResolucion
+        Resolutor          = $datos.Resolutor
+        DetalleResolucion  = $datos.DetalleResolucion
+        FechaNacimiento    = if ($u.Count -eq 1) { $u[0].FechaNacimiento } else { "" }
+        Telefono           = if ($u.Count -eq 1) { $u[0].Telefono } else { "" }
+        Jurisdiccion       = if ($u.Count -eq 1) { $u[0].Jurisdiccion } else { "" }
+        AseguradoraPoliza  = if ($u.Count -eq 1) { $u[0].AseguradoraPoliza } else { "" }
+        MotivoAlergias     = if ($u.Count -eq 1) { $u[0].MotivoAlergias } else { "" }
+        Consentimiento     = if ($u.Count -eq 1) { $u[0].Consentimiento } else { "" }
+        FechaConsentimiento = if ($u.Count -eq 1) { $u[0].FechaConsentimiento } else { "" }
+        VersionAviso       = if ($u.Count -eq 1) { $u[0].VersionAviso } else { "" }
+        FechaRegistro      = if ($u.Count -eq 1) { $u[0].FechaRegistro } else { "" }
+    }
+    $lineas = @(@([pscustomobject]$fila) | ConvertTo-Csv -NoTypeInformation)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes(($lineas -join "`r`n"))
+    Registrar-Evento $ctx "ARCO_REPORTE_DESCARGADO" "/privacidad/reporte" $true
+    Enviar-Archivo $ctx $bytes "reporte-arco-$id.csv"
 }
 
 $Rutas["/admin"] = {

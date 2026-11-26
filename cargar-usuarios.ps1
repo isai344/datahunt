@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $UsersCsv = Join-Path $DataPath "users.csv"
 $AccessLogCsv = Join-Path $DataPath "access_log.csv"
-$EncabezadoUsuarios = "Id,Nombre,Email,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias,Consentimiento,FechaConsentimiento,VersionAviso,FechaRegistro"
+$EncabezadoUsuarios = "Id,Nombre,Email,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,AseguradoraPoliza,MotivoAlergias,Consentimiento,FechaConsentimiento,VersionAviso,FechaRegistro,TotpSecret,TotpActivado"
 $EncabezadoAccesos = "Fecha,Evento,Ruta,Exito,Nivel,IPAnonimizada"
 $PrivacyPolicyVer = "v2.1 (2026-11-26)"
 $IteracionesPbkdf2 = 600000
@@ -168,6 +168,8 @@ foreach ($fila in $entrada) {
         FechaConsentimiento = $fecha
         VersionAviso        = $PrivacyPolicyVer
         FechaRegistro       = $fecha
+        TotpSecret          = ""
+        TotpActivado        = "False"
     }
 
     $porEmail[$email] = $true

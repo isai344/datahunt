@@ -2,3 +2,4 @@ Nombre,Email,Password,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,Asegura
 ADMIN,admin@kuxtal.test,,,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
 DPO,dpo@kuxtal.test,,,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
 ADMISSION,admision@kuxtal.test,,,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
+PRIVACY,privacidad@kuxtal.test,12345678,,1900-01-01,0000000000,Otro,NO_APLICA,Cuenta de servicio - Departamento de Privacidad

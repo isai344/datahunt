@@ -35,9 +35,11 @@ for fila in entrada:
         "FechaConsentimiento": ahora,
         "VersionAviso": version,
         "FechaRegistro": ahora,
+        "TotpSecret": fila.get("TotpSecret", ""),
+        "TotpActivado": fila.get("TotpActivado", "False"),
     })
 
-encabezado = ["Id", "Nombre", "Email", "PasswordHash", "FechaNacimiento", "Telefono", "Jurisdiccion", "AseguradoraPoliza", "MotivoAlergias", "Consentimiento", "FechaConsentimiento", "VersionAviso", "FechaRegistro"]
+encabezado = ["Id", "Nombre", "Email", "PasswordHash", "FechaNacimiento", "Telefono", "Jurisdiccion", "AseguradoraPoliza", "MotivoAlergias", "Consentimiento", "FechaConsentimiento", "VersionAviso", "FechaRegistro", "TotpSecret", "TotpActivado"]
 with users.open("w", encoding="utf-8", newline="") as f:
     escritor = csv.DictWriter(f, fieldnames=encabezado)
     escritor.writeheader()

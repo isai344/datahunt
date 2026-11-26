@@ -2,3 +2,4 @@ Nombre,Email,Password,PasswordHash,FechaNacimiento,Telefono,Jurisdiccion,Asegura
 Administrador TI,admin@kuxtal.test,,CpeoHgZJ8f0q2wKVwLkd2Q==:n0NobU1gyvPuLaZ8HO2uhupM2qsbILBzVTX6xee9+2c=,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
 DPO,dpo@kuxtal.test,,oDZ+VFsocup2nXoU0UuuuA==:gBG0xjKwa5zjLYN0riNaCtEhso1YmiDODP6KXosxvXY=,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
 Admisión,admision@kuxtal.test,,YFZGUXsz40h9lhkFqC95/g==:zIvMJecoM7lGOcyVcTRgKoWxq9bX1pGBe8HsXUf6Lu8=,1900-01-01,0000000000,Otro,NO_APLICA,Carga masiva
+Oficina de Privacidad,privacidad@kuxtal.test,,4uszsAxCg8tA40bnOEo1aQ==:7kkmryvzIG84/BAGydC0dDwVUYU98olKrDJTqhf5Lhw=,1900-01-01,0000000000,Otro,NO_APLICA,Cuenta de servicio - Departamento de Privacidad
