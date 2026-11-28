@@ -1,0 +1,48 @@
+DATA HUNT - ACCESO DESDE OTRA PC DE LA MISMA RED
+================================================
+
+1) Copia esta carpeta a la otra computadora (USB, correo, etc.).
+
+2) Abre PowerShell como ADMINISTRADOR en la carpeta copiada y ejecuta:
+
+   powershell.exe -ExecutionPolicy Bypass -File .\Configurar-Cliente-Kuxtal.ps1
+
+   Si el script pide permisos, acepta el aviso de UAC.
+
+3) Abre el navegador y escribe solamente:
+
+   kuxtal.com
+
+   Tambien funciona: hospitalkuxtal.com
+   No hace falta escribir IP ni puerto.
+
+¿QUE HACE EL SCRIPT?
+--------------------
+- Agrega al archivo hosts de la PC:
+    192.168.100.50 kuxtal.com www.kuxtal.com hospitalkuxtal.com www.hospitalkuxtal.com
+- Importa el certificado del servidor en "Autoridades de certificacion raiz"
+  de confianza. Por eso NO sale el aviso "No es seguro".
+
+El archivo hospitalkuxtal.com.cer esta incluido solo como respaldo; el script
+ya trae el certificado integrado, asi que no hay que instalarlo aparte.
+
+VERIFICACION RAPIDA
+-------------------
+   Test-NetConnection 192.168.100.50 -Port 443
+Debe mostrar: TcpTestSucceeded : True
+
+SI LA PC ENTRA POR TAILSCALE EN VEZ DE LA LAN:
+----------------------------------------------
+   powershell.exe -ExecutionPolicy Bypass -File .\Configurar-Cliente-Kuxtal.ps1 -ServidorIp 100.109.230.106
+
+SI CAMBIA LA IP DEL SERVIDOR (Wi-Fi / DHCP):
+--------------------------------------------
+Vuelve a ejecutar el comando del paso 2 en la PC cliente. En el servidor
+ya se actualiza solo cada 5 minutos.
+
+REVERSION (si ya no se quiere el acceso):
+-----------------------------------------
+Quita la linea marcada "# Data Hunt" del archivo:
+  C:\Windows\System32\drivers\etc\hosts
+Y ejecuta:
+  Remove-Item Cert:\LocalMachine\Root\A5505BF4269ABD7D387B80E8B3D0ADC9C737BE9F

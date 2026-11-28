@@ -21,11 +21,12 @@ $ArcoSolicitudesCsv = Join-Path $DataPath "arco_solicitudes.csv"
 $PrivacyPolicyVer = "v2.1 (2026-11-26)"
 
 $Direccion = "+"
-$Puerto    = 5000
+$Puerto    = 443
+$PuertoRedireccion = 80
 
-# CORRECCIÓN H-04: la aplicacion escucha HTTP local; el proxy IIS/nginx termina TLS.
-# Si el proxy envia X-Forwarded-Proto, se fuerza HTTPS. En produccion poner $ExigirHttps = $true.
-$ExigirHttps      = $false
+# CORRECCIÓN H-04: TLS termina en el propio HttpListener (https://kuxtal.com/, puerto 443).
+# El puerto 80 solo redirige a HTTPS. Se conserva X-Forwarded-Proto por si se añade proxy.
+$ExigirHttps      = $true
 $ProxyProtoHeader = "X-Forwarded-Proto"
 
 $SessionTimeoutMin   = 30
@@ -466,6 +467,12 @@ function Set-CabecerasSeguras($ctx) {
     }
 }
 
+# Las peticiones HEAD declaran Content-Length pero no envian cuerpo.
+function Escribir-Cuerpo($ctx, [byte[]]$bytes) {
+    if ($ctx.Request.HttpMethod -eq 'HEAD') { return }
+    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+}
+
 function Enviar($ctx, [string]$html, [int]$codigo = 200) {
     if (-not $script:CspNonce) { Nuevo-Nonce | Out-Null }
     Set-CabecerasSeguras $ctx
@@ -473,7 +480,7 @@ function Enviar($ctx, [string]$html, [int]$codigo = 200) {
     $ctx.Response.ContentType = "text/html; charset=utf-8"
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($html)
     $ctx.Response.ContentLength64 = $bytes.Length
-    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    Escribir-Cuerpo $ctx $bytes
     $ctx.Response.Close()
     $script:CspNonce = $null
 }
@@ -485,7 +492,7 @@ function Enviar-Archivo($ctx, [byte[]]$bytes, [string]$nombreArchivo) {
     $ctx.Response.StatusCode = 200
     $ctx.Response.ContentType = "text/csv; charset=utf-8"
     $ctx.Response.ContentLength64 = $bytes.Length
-    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    Escribir-Cuerpo $ctx $bytes
     $ctx.Response.Close()
     $script:CspNonce = $null
 }
@@ -498,7 +505,7 @@ function Enviar-Imagen($ctx, [byte[]]$bytes) {
     $ctx.Response.ContentType = "image/png"
     Set-Header $ctx "Cache-Control" "public, max-age=86400"
     $ctx.Response.ContentLength64 = $bytes.Length
-    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    Escribir-Cuerpo $ctx $bytes
     $ctx.Response.Close()
     $script:CspNonce = $null
 }
@@ -1624,7 +1631,8 @@ $Rutas["/mi-cuenta"] = {
 Inicializar-Csv
 
 $servidor = [System.Net.HttpListener]::new()
-$servidor.Prefixes.Add("http://$($Direccion):$Puerto/")
+$servidor.Prefixes.Add("https://$($Direccion):$Puerto/")
+$servidor.Prefixes.Add("http://$($Direccion):$PuertoRedireccion/")
 try {
     $servidor.Start()
 } catch {
@@ -1636,10 +1644,11 @@ $urlsLan = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
     $_.IPAddress -ne '127.0.0.1' -and
     $_.PrefixOrigin -ne 'WellKnown' -and
     $_.InterfaceAlias -notmatch 'Tailscale'
-} | ForEach-Object { "http://$($_.IPAddress):$Puerto/" }
+} | ForEach-Object { "https://$($_.IPAddress):$Puerto/" }
 
 Write-Host "=== $CompanyName | $AppVersion ==="
-Write-Host "Escuchando en todas las interfaces de red en el puerto $Puerto"
+Write-Host "Escuchando HTTPS en todas las interfaces en el puerto $Puerto (HTTP $($PuertoRedireccion) redirige a HTTPS)"
+Write-Host "URL principal: https://kuxtal.com/"
 foreach ($url in $urlsLan) { Write-Host "Acceso LAN: $url" -ForegroundColor Cyan }
 Write-Host "Rutas: $(($Rutas.Keys | Sort-Object) -join ', ')"
 
@@ -1664,7 +1673,7 @@ try {
             if ($debeRedirigir) {
                 # CORRECCIÓN H-04: TLS terminado en el reverse proxy.
                 $hostHeader = $ctx.Request.Headers["Host"]
-                Redirigir $ctx "https://$hostHeader$ruta" 301
+                Redirigir $ctx "https://$hostHeader$ruta$($ctx.Request.Url.Query)" 301
             }
             elseif ($Rutas.Contains($ruta)) {
                 $manejador = $Rutas[$ruta]

@@ -7,11 +7,11 @@ Actualizado: 2026-11-26. Contraseñas reales, listas para probar.
 
 Rol              Nombre            Correo                   Contrasena
 ---------------  ----------------  -----------------------  ----------------
-R-03 TI (admin)  Administrador TI  admin@kuxtal.test        12345678
-R-04 DPO         DPO               dpo@kuxtal.test          12345678
-R-02 Admision    Admision          admision@kuxtal.test     12345678
+R-03 TI (admin)  Administrador TI  admin@kuxtal.test        12345678 --rodrigo, no registrado aun 
+R-04 DPO         DPO               dpo@kuxtal.test          12345678 ---pao
+R-02 Admision    Admision          admision@kuxtal.test     12345678 ---isaias 
 R-02 Admision    Rosa Medina Lara  rmedinal@kuxtal.example  Y!%NbXB19%ij6*$P
-R-07 Privacidad  Oficina Privacidad  privacidad@kuxtal.test  12345678
+R-07 Privacidad  Oficina Privacidad  privacidad@kuxtal.test  12345678 ---raul
 
 >>> ROL ESPECIAL, SIN MFA (R-05 Medico y R-06 Facturacion no requieren Google Authenticator) <<<
 

@@ -1,0 +1,223 @@
+2026-11-27T16:34:11.0942582-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:34:11.1137654-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:34:11.1215990-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:34:11.1247696-06:00 [INFO] Modo: SOLO VERIFICAR
+2026-11-27T16:34:16.7920958-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:34:16.7920958-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:34:16.8174810-06:00 [WARN] Puntos a reparar: UrlAcl443, UrlAcl80
+2026-11-27T16:34:16.8195771-06:00 [OK] SoloVerificar: no se aplico ningun cambio.
+2026-11-27T16:34:19.7542745-06:00 [OK] Certificado 443                      OK
+2026-11-27T16:34:19.7542745-06:00 [OK] Certificado [::]:443                 OK
+2026-11-27T16:34:19.7542745-06:00 [OK] Certificado en Trusted Root          OK
+2026-11-27T16:34:19.7716095-06:00 [ERROR] URL ACL 443                          FALLO
+2026-11-27T16:34:19.7737125-06:00 [ERROR] URL ACL 80                           FALLO
+2026-11-27T16:34:19.7765229-06:00 [OK] Firewall 443                         OK
+2026-11-27T16:34:19.7791330-06:00 [OK] Firewall 80                          OK
+2026-11-27T16:34:19.7812202-06:00 [OK] DNS ambos dominios                   OK
+2026-11-27T16:34:19.7812202-06:00 [OK] Hosts del servidor                   OK
+2026-11-27T16:34:19.7857246-06:00 [OK] users.csv (82, sin duplicados)       OK
+2026-11-27T16:34:19.7857246-06:00 [OK] Tareas programadas                   OK
+2026-11-27T16:34:19.7857246-06:00 [OK] App escuchando 443                   OK
+2026-11-27T16:34:19.7857246-06:00 [OK] Puerto 5000 libre                    OK
+2026-11-27T16:34:19.7857246-06:00 [OK] HTTPS hospitalkuxtal.com -> 200      OK
+2026-11-27T16:34:19.7857246-06:00 [OK] HTTPS kuxtal.com -> 200              OK
+2026-11-27T16:34:19.7857246-06:00 [ERROR] HTTP 80 -> 301                       FALLO
+2026-11-27T16:34:19.7857246-06:00 [OK] Paquete cliente                      OK
+2026-11-27T16:34:19.7857246-06:00 [OK] Kit exposicion                       OK
+2026-11-27T16:34:19.8012510-06:00 [OK] 5990 sin cambios                     OK
+2026-11-27T16:34:19.8073657-06:00 [INFO] Usuarios: 82; con TOTP: 3; duplicados: 0
+2026-11-27T16:34:19.8095141-06:00 [INFO] Cuentas privilegiadas NO probadas por este inicializador; PasswordHash y secretos TOTP intactos.
+2026-11-27T16:34:19.8111200-06:00 [INFO] URL principal: https://hospitalkuxtal.com/  |  Alias: https://kuxtal.com/
+2026-11-27T16:34:19.8212851-06:00 [ERROR] FINALIZO CON 3 FALLOS. Revisa C:\DataHunt\inicializador_maestro.log y los respaldos.
+2026-11-27T16:35:09.4508170-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:35:09.4659518-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:35:09.4739846-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:35:09.4739846-06:00 [INFO] Modo: SOLO VERIFICAR
+2026-11-27T16:35:14.8016382-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:35:14.8058730-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:35:14.8118720-06:00 [OK] SoloVerificar: no se aplico ningun cambio.
+2026-11-27T16:35:17.7078791-06:00 [WARN] HTTP 80 devolvio 0 (esperado 301)
+2026-11-27T16:35:17.7514168-06:00 [OK] Certificado 443                      OK
+2026-11-27T16:35:17.7514168-06:00 [OK] Certificado [::]:443                 OK
+2026-11-27T16:35:17.7514168-06:00 [OK] Certificado en Trusted Root          OK
+2026-11-27T16:35:17.7514168-06:00 [OK] URL ACL 443                          OK
+2026-11-27T16:35:17.7514168-06:00 [OK] URL ACL 80                           OK
+2026-11-27T16:35:17.7514168-06:00 [OK] Firewall 443                         OK
+2026-11-27T16:35:17.7636449-06:00 [OK] Firewall 80                          OK
+2026-11-27T16:35:17.7636449-06:00 [OK] DNS ambos dominios                   OK
+2026-11-27T16:35:17.7671506-06:00 [OK] Hosts del servidor                   OK
+2026-11-27T16:35:17.7701727-06:00 [OK] users.csv (82, sin duplicados)       OK
+2026-11-27T16:35:17.7701727-06:00 [OK] Tareas programadas                   OK
+2026-11-27T16:35:17.7701727-06:00 [OK] App escuchando 443                   OK
+2026-11-27T16:35:17.7701727-06:00 [OK] Puerto 5000 libre                    OK
+2026-11-27T16:35:17.7766938-06:00 [OK] HTTPS hospitalkuxtal.com -> 200      OK
+2026-11-27T16:35:17.7781976-06:00 [OK] HTTPS kuxtal.com -> 200              OK
+2026-11-27T16:35:17.7794964-06:00 [ERROR] HTTP 80 -> 301                       FALLO
+2026-11-27T16:35:17.7804779-06:00 [OK] Paquete cliente                      OK
+2026-11-27T16:35:17.7845555-06:00 [OK] Kit exposicion                       OK
+2026-11-27T16:35:17.7887626-06:00 [OK] 5990 sin cambios                     OK
+2026-11-27T16:35:17.7934678-06:00 [INFO] Usuarios: 82; con TOTP: 3; duplicados: 0
+2026-11-27T16:35:17.7944990-06:00 [INFO] Cuentas privilegiadas NO probadas por este inicializador; PasswordHash y secretos TOTP intactos.
+2026-11-27T16:35:17.7944990-06:00 [INFO] URL principal: https://hospitalkuxtal.com/  |  Alias: https://kuxtal.com/
+2026-11-27T16:35:17.7990024-06:00 [ERROR] FINALIZO CON 1 FALLOS. Revisa C:\DataHunt\inicializador_maestro.log y los respaldos.
+2026-11-27T16:35:36.0202907-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:35:36.0431742-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:35:36.0492772-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:35:36.0513010-06:00 [INFO] Modo: SOLO VERIFICAR
+2026-11-27T16:35:41.3753225-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:35:41.3773631-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:35:41.3804506-06:00 [OK] SoloVerificar: no se aplico ningun cambio.
+2026-11-27T16:35:44.2793861-06:00 [OK] Certificado 443                      OK
+2026-11-27T16:35:44.2815438-06:00 [OK] Certificado [::]:443                 OK
+2026-11-27T16:35:44.2836331-06:00 [OK] Certificado en Trusted Root          OK
+2026-11-27T16:35:44.2846449-06:00 [OK] URL ACL 443                          OK
+2026-11-27T16:35:44.2846449-06:00 [OK] URL ACL 80                           OK
+2026-11-27T16:35:44.2846449-06:00 [OK] Firewall 443                         OK
+2026-11-27T16:35:44.2846449-06:00 [OK] Firewall 80                          OK
+2026-11-27T16:35:44.2846449-06:00 [OK] DNS ambos dominios                   OK
+2026-11-27T16:35:44.2926646-06:00 [OK] Hosts del servidor                   OK
+2026-11-27T16:35:44.2926646-06:00 [OK] users.csv (82, sin duplicados)       OK
+2026-11-27T16:35:44.2926646-06:00 [OK] Tareas programadas                   OK
+2026-11-27T16:35:44.2987475-06:00 [OK] App escuchando 443                   OK
+2026-11-27T16:35:44.3007507-06:00 [OK] Puerto 5000 libre                    OK
+2026-11-27T16:35:44.3035375-06:00 [OK] HTTPS hospitalkuxtal.com -> 200      OK
+2026-11-27T16:35:44.3051167-06:00 [OK] HTTPS kuxtal.com -> 200              OK
+2026-11-27T16:35:44.3072090-06:00 [OK] HTTP 80 -> 301                       OK
+2026-11-27T16:35:44.3087787-06:00 [OK] Paquete cliente                      OK
+2026-11-27T16:35:44.3108759-06:00 [OK] Kit exposicion                       OK
+2026-11-27T16:35:44.3124499-06:00 [OK] 5990 sin cambios                     OK
+2026-11-27T16:35:44.3165287-06:00 [INFO] Usuarios: 82; con TOTP: 3; duplicados: 0
+2026-11-27T16:35:44.3185432-06:00 [INFO] Cuentas privilegiadas NO probadas por este inicializador; PasswordHash y secretos TOTP intactos.
+2026-11-27T16:35:44.3200569-06:00 [INFO] URL principal: https://hospitalkuxtal.com/  |  Alias: https://kuxtal.com/
+2026-11-27T16:35:44.3248774-06:00 [OK] SISTEMA LISTO. No hace falta IP ni puerto: abre kuxtal.com.
+2026-11-27T16:35:50.4592223-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:35:50.4814971-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:35:50.4890649-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:35:50.4890649-06:00 [INFO] Modo: ESTADO FINAL
+2026-11-27T16:35:55.8518041-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:35:55.8543064-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:35:56.3736277-06:00 [OK] Respaldo previo: C:\DataHunt\Backups-Maestro\20261127_163555
+2026-11-27T16:35:59.1666909-06:00 [INFO] DNS: 2026-11-27T16:35:59.1585898-06:00 SIN CAMBIOS: kuxtal.com, hospitalkuxtal.com -> 192.168.100.50 (hosts: True)
+2026-11-27T16:35:59.2187510-06:00 [OK] DNS y hosts apuntan a 192.168.100.50
+2026-11-27T16:35:59.2346941-06:00 [OK] users.csv intacto: 82 cuentas, 3 con secreto TOTP preservado
+2026-11-27T16:35:59.9247415-06:00 [INFO] Tareas: [OK] Tarea Kuxtal-DNS-Actualizar (cada 5 min)
+2026-11-27T16:35:59.9621156-06:00 [INFO] Tareas: [OK] Tarea Kuxtal-DNS-Actualizar-Boot (al arrancar)
+2026-11-27T16:36:00.0327866-06:00 [INFO] Tareas: [OK] Tarea Kuxtal-DataHunt-Auto (al arrancar, +1 min, reintenta 3 veces)
+2026-11-27T16:36:00.3952724-06:00 [INFO] Tareas: 
+2026-11-27T16:36:00.3952724-06:00 [INFO] Tareas: TaskName                     State
+2026-11-27T16:36:00.3952724-06:00 [INFO] Tareas: --------                     -----
+2026-11-27T16:36:00.3952724-06:00 [INFO] Tareas: Kuxtal-DataHunt              Ready
+2026-11-27T16:36:00.3952724-06:00 [INFO] Tareas: Kuxtal-DataHunt-Auto         Ready
+2026-11-27T16:36:00.4082839-06:00 [INFO] Tareas: Kuxtal-DNS-Actualizar        Ready
+2026-11-27T16:36:00.4111220-06:00 [INFO] Tareas: Kuxtal-DNS-Actualizar-Boot   Ready
+2026-11-27T16:36:00.4138284-06:00 [INFO] Tareas: Kuxtal-Tailscale-al-arrancar Ready
+2026-11-27T16:36:00.4159553-06:00 [INFO] Tareas: 
+2026-11-27T16:36:00.4182172-06:00 [INFO] Tareas: 
+2026-11-27T16:36:00.4891965-06:00 [OK] Tarea antigua Kuxtal-DataHunt desactivada (usuario svc_datahunt$ inexistente)
+2026-11-27T16:36:28.6068074-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:36:28.6294702-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:36:28.6384854-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:36:28.6384854-06:00 [INFO] Modo: ESTADO FINAL
+2026-11-27T16:36:33.9408317-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:36:33.9457222-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:36:34.4663634-06:00 [OK] Respaldo previo: C:\DataHunt\Backups-Maestro\20261127_163633
+2026-11-27T16:36:37.2389085-06:00 [INFO] DNS: 2026-11-27T16:36:37.2210732-06:00 SIN CAMBIOS: kuxtal.com, hospitalkuxtal.com -> 192.168.100.50 (hosts: True)
+2026-11-27T16:36:37.2846230-06:00 [OK] DNS y hosts apuntan a 192.168.100.50
+2026-11-27T16:36:37.3091172-06:00 [OK] users.csv intacto: 82 cuentas, 3 con secreto TOTP preservado
+2026-11-27T16:36:37.8824392-06:00 [INFO] Tareas: [OK] Tarea Kuxtal-DNS-Actualizar (cada 5 min)
+2026-11-27T16:36:37.9208140-06:00 [INFO] Tareas: [OK] Tarea Kuxtal-DNS-Actualizar-Boot (al arrancar)
+2026-11-27T16:36:37.9992201-06:00 [INFO] Tareas: [OK] Tarea Kuxtal-DataHunt-Auto (al arrancar, +1 min, reintenta 3 veces)
+2026-11-27T16:36:38.3630196-06:00 [INFO] Tareas: 
+2026-11-27T16:36:38.3684870-06:00 [INFO] Tareas: TaskName                        State
+2026-11-27T16:36:38.3705310-06:00 [INFO] Tareas: --------                        -----
+2026-11-27T16:36:38.3726026-06:00 [INFO] Tareas: Kuxtal-DataHunt              Disabled
+2026-11-27T16:36:38.3749124-06:00 [INFO] Tareas: Kuxtal-DataHunt-Auto            Ready
+2026-11-27T16:36:38.3769981-06:00 [INFO] Tareas: Kuxtal-DNS-Actualizar           Ready
+2026-11-27T16:36:38.3781255-06:00 [INFO] Tareas: Kuxtal-DNS-Actualizar-Boot      Ready
+2026-11-27T16:36:38.3802092-06:00 [INFO] Tareas: Kuxtal-Tailscale-al-arrancar    Ready
+2026-11-27T16:36:38.3802092-06:00 [INFO] Tareas: 
+2026-11-27T16:36:38.3862820-06:00 [INFO] Tareas: 
+2026-11-27T16:36:38.8114820-06:00 [OK] Paquetes del cliente y kit de exposicion actualizados
+2026-11-27T16:36:41.8225494-06:00 [OK] Certificado 443                      OK
+2026-11-27T16:36:41.8225494-06:00 [OK] Certificado [::]:443                 OK
+2026-11-27T16:36:41.8225494-06:00 [OK] Certificado en Trusted Root          OK
+2026-11-27T16:36:41.8325613-06:00 [OK] URL ACL 443                          OK
+2026-11-27T16:36:41.8325613-06:00 [OK] URL ACL 80                           OK
+2026-11-27T16:36:41.8360646-06:00 [OK] Firewall 443                         OK
+2026-11-27T16:36:41.8393851-06:00 [OK] Firewall 80                          OK
+2026-11-27T16:36:41.8393851-06:00 [OK] DNS ambos dominios                   OK
+2026-11-27T16:36:41.8393851-06:00 [OK] Hosts del servidor                   OK
+2026-11-27T16:36:41.8393851-06:00 [OK] users.csv (82, sin duplicados)       OK
+2026-11-27T16:36:41.8393851-06:00 [OK] Tareas programadas                   OK
+2026-11-27T16:36:41.8479060-06:00 [OK] App escuchando 443                   OK
+2026-11-27T16:36:41.8479060-06:00 [OK] Puerto 5000 libre                    OK
+2026-11-27T16:36:41.8519100-06:00 [OK] HTTPS hospitalkuxtal.com -> 200      OK
+2026-11-27T16:36:41.8519100-06:00 [OK] HTTPS kuxtal.com -> 200              OK
+2026-11-27T16:36:41.8519100-06:00 [OK] HTTP 80 -> 301                       OK
+2026-11-27T16:36:41.8594744-06:00 [OK] Paquete cliente                      OK
+2026-11-27T16:36:41.8594744-06:00 [OK] Kit exposicion                       OK
+2026-11-27T16:36:41.8669922-06:00 [OK] 5990 sin cambios                     OK
+2026-11-27T16:36:41.8691772-06:00 [INFO] Usuarios: 82; con TOTP: 3; duplicados: 0
+2026-11-27T16:36:41.8715158-06:00 [INFO] Cuentas privilegiadas NO probadas por este inicializador; PasswordHash y secretos TOTP intactos.
+2026-11-27T16:36:41.8737397-06:00 [INFO] URL principal: https://hospitalkuxtal.com/  |  Alias: https://kuxtal.com/
+2026-11-27T16:36:41.8747747-06:00 [OK] SISTEMA LISTO. No hace falta IP ni puerto: abre kuxtal.com.
+2026-11-27T16:38:18.8850065-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:38:18.9080798-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:38:18.9143173-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:38:18.9170928-06:00 [INFO] Modo: SOLO VERIFICAR
+2026-11-27T16:38:25.0687069-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:38:25.0728120-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:38:25.0728120-06:00 [OK] SoloVerificar: no se aplico ningun cambio.
+2026-11-27T16:38:28.7808513-06:00 [OK] Certificado 443                      OK
+2026-11-27T16:38:28.7835161-06:00 [OK] Certificado [::]:443                 OK
+2026-11-27T16:38:28.7835161-06:00 [OK] Certificado en Trusted Root          OK
+2026-11-27T16:38:28.7835161-06:00 [OK] URL ACL 443                          OK
+2026-11-27T16:38:28.7835161-06:00 [OK] URL ACL 80                           OK
+2026-11-27T16:38:28.7835161-06:00 [OK] Firewall 443                         OK
+2026-11-27T16:38:28.7835161-06:00 [OK] Firewall 80                          OK
+2026-11-27T16:38:28.7935200-06:00 [OK] DNS ambos dominios                   OK
+2026-11-27T16:38:28.7935200-06:00 [OK] Hosts del servidor                   OK
+2026-11-27T16:38:28.7935200-06:00 [OK] users.csv (82, sin duplicados)       OK
+2026-11-27T16:38:28.7935200-06:00 [OK] Tareas programadas                   OK
+2026-11-27T16:38:28.8015329-06:00 [OK] App escuchando 443                   OK
+2026-11-27T16:38:28.8049811-06:00 [OK] Puerto 5000 libre                    OK
+2026-11-27T16:38:28.8070686-06:00 [OK] HTTPS hospitalkuxtal.com -> 200      OK
+2026-11-27T16:38:28.8091891-06:00 [OK] HTTPS kuxtal.com -> 200              OK
+2026-11-27T16:38:28.8112668-06:00 [OK] HTTP 80 -> 301                       OK
+2026-11-27T16:38:28.8134055-06:00 [OK] Paquete cliente                      OK
+2026-11-27T16:38:28.8150270-06:00 [OK] Kit exposicion                       OK
+2026-11-27T16:38:28.8150270-06:00 [OK] 5990 sin cambios                     OK
+2026-11-27T16:38:28.8192279-06:00 [INFO] Usuarios: 82; con TOTP: 3; duplicados: 0
+2026-11-27T16:38:28.8252306-06:00 [INFO] Cuentas privilegiadas NO probadas por este inicializador; PasswordHash y secretos TOTP intactos.
+2026-11-27T16:38:28.8252306-06:00 [INFO] URL principal: https://hospitalkuxtal.com/  |  Alias: https://kuxtal.com/
+2026-11-27T16:38:28.8307462-06:00 [OK] SISTEMA LISTO. No hace falta IP ni puerto: abre kuxtal.com.
+2026-11-27T16:42:20.0113303-06:00 [INFO] === INICIALIZADOR MAESTRO - Data Hunt v2 ===
+2026-11-27T16:42:20.0341347-06:00 [INFO] Administrador: KUXTAL\adm.isai
+2026-11-27T16:42:20.0365540-06:00 [INFO] Interprete: PowerShell 5.1.20348.5622
+2026-11-27T16:42:20.0365540-06:00 [INFO] Modo: SOLO VERIFICAR
+2026-11-27T16:42:26.3144500-06:00 [INFO] IP activa seleccionada: 192.168.100.50
+2026-11-27T16:42:26.3209656-06:00 [INFO] 5990 antes: 0.0.0.0=594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B / [::]=C0E0F9863A8A479508617C7C98050C0B6670C859
+2026-11-27T16:42:26.3209656-06:00 [OK] SoloVerificar: no se aplico ningun cambio.
+2026-11-27T16:42:29.9362339-06:00 [OK] Certificado 443                      OK
+2026-11-27T16:42:29.9388506-06:00 [OK] Certificado [::]:443                 OK
+2026-11-27T16:42:29.9417296-06:00 [OK] Certificado en Trusted Root          OK
+2026-11-27T16:42:29.9417296-06:00 [OK] URL ACL 443                          OK
+2026-11-27T16:42:29.9417296-06:00 [OK] URL ACL 80                           OK
+2026-11-27T16:42:29.9417296-06:00 [OK] Firewall 443                         OK
+2026-11-27T16:42:29.9502326-06:00 [OK] Firewall 80                          OK
+2026-11-27T16:42:29.9522538-06:00 [OK] DNS ambos dominios                   OK
+2026-11-27T16:42:29.9522538-06:00 [OK] Hosts del servidor                   OK
+2026-11-27T16:42:29.9522538-06:00 [OK] users.csv (82, sin duplicados)       OK
+2026-11-27T16:42:29.9577725-06:00 [OK] Tareas programadas                   OK
+2026-11-27T16:42:29.9612827-06:00 [OK] App escuchando 443                   OK
+2026-11-27T16:42:29.9635034-06:00 [OK] Puerto 5000 libre                    OK
+2026-11-27T16:42:29.9656236-06:00 [OK] HTTPS hospitalkuxtal.com -> 200      OK
+2026-11-27T16:42:29.9677157-06:00 [OK] HTTPS kuxtal.com -> 200              OK
+2026-11-27T16:42:29.9692887-06:00 [OK] HTTP 80 -> 301                       OK
+2026-11-27T16:42:29.9713607-06:00 [OK] Paquete cliente                      OK
+2026-11-27T16:42:29.9713607-06:00 [OK] Kit exposicion                       OK
+2026-11-27T16:42:29.9713607-06:00 [OK] 5990 sin cambios                     OK
+2026-11-27T16:42:29.9790299-06:00 [INFO] Usuarios: 82; con TOTP: 3; duplicados: 0
+2026-11-27T16:42:29.9815329-06:00 [INFO] Cuentas privilegiadas NO probadas por este inicializador; PasswordHash y secretos TOTP intactos.
+2026-11-27T16:42:29.9815329-06:00 [INFO] URL principal: https://hospitalkuxtal.com/  |  Alias: https://kuxtal.com/
+2026-11-27T16:42:29.9815329-06:00 [OK] SISTEMA LISTO. No hace falta IP ni puerto: abre kuxtal.com.

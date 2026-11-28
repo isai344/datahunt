@@ -1,0 +1,12 @@
+2026-11-27T16:21:49.7860426-06:00 IP seleccionada: 192.168.100.61 (Wi-Fi). Modo: solo verificacion
+2026-11-27T16:21:51.8595107-06:00 Servidor: TCP443=True, procesos app=1, reglas firewall=2/2
+2026-11-27T16:21:51.8640367-06:00 Propuesta: la PC del amigo debe ejecutar Configurar-Cliente-Kuxtal.ps1 -ServidorIp 192.168.100.61 y abrir kuxtal.com
+2026-11-27T16:21:51.8640367-06:00 No se modification nada (SoloVerificar).
+2026-11-27T16:23:17.4264711-06:00 IP seleccionada: 192.168.100.50 (Ethernet). Modo: aplicar
+2026-11-27T16:23:18.6562148-06:00 Servidor: TCP443=True, procesos app=1, reglas firewall=2/2
+2026-11-27T16:23:20.4595322-06:00 DNS: 2026-11-27T16:23:20.4278184-06:00 SIN CAMBIOS: kuxtal.com, hospitalkuxtal.com -> 192.168.100.50 (hosts: True)
+2026-11-27T16:23:20.5913792-06:00 Local https://hospitalkuxtal.com/ -> HTTP 200
+2026-11-27T16:23:20.6525966-06:00 Local https://kuxtal.com/ -> HTTP 200
+2026-11-27T16:23:21.1586108-06:00 Paquete generado: C:\DataHunt\Expo\Paquete-Amigo-Expo.zip
+2026-11-27T16:23:21.1611138-06:00 Resumen para el amigo: C:\DataHunt\Expo\PARA-EL-AMIGO.txt
+2026-11-27T16:23:21.1611138-06:00 LISTO. Entrega el ZIP al amigo; el debe abrir kuxtal.com (sin IP ni puerto).

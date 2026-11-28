@@ -1,0 +1,120 @@
+DATA HUNT - LLEVAR EL SERVIDOR A LA ESCUELA (EXPOSICION)
+=========================================================
+
+Objetivo: que la PC de tu amigo, conectada al MISMO Wi-Fi de la escuela,
+abra la pagina escribiendo solo kuxtal.com (sin IP y sin puerto).
+
+----------------------------------------------------------------------
+0) ANTES DE SALIR (en tu red actual)
+----------------------------------------------------------------------
+- Confirmar que la app responde:
+    curl https://hospitalkuxtal.com/        -> 200
+    curl https://kuxtal.com/                -> 200
+- Llevar en USB (o OneDrive/correo) este archivo:
+    C:\DataHunt\Paquete-Cliente-Kuxtal.zip
+  (si no puedes copiarlo desde \\SRV-HOSP-01\TI, toma la copia local de
+   C:\DataHunt\Paquete-Cliente-Kuxtal.zip).
+- Opcional pero recomendado: instalar Tailscale en la PC del amigo y
+  meterla a la misma tailnet del servidor. Es el plan B si el Wi-Fi
+  de la escuela no deja que los equipos se vean entre si.
+
+----------------------------------------------------------------------
+1) EN LA ESCUELA, EN EL SERVIDOR
+----------------------------------------------------------------------
+a) Conectar el servidor al Wi-Fi de la escuela y esperar a que tenga IP:
+     ipconfig
+   Anota el IPv4 de la interfaz Wi-Fi (por ejemplo 192.168.15.23).
+
+b) Abrir PowerShell COMO ADMINISTRADOR y ejecutar:
+     powershell.exe -ExecutionPolicy Bypass -File C:\DataHunt\Expo\Preparar-Exposicion.ps1
+
+   Ese script hace todo lo importante:
+   - elige la IP del Wi-Fi (no la vieja IP del hospital),
+   - actualiza los registros A de kuxtal.com y hospitalkuxtal.com,
+   - reescribe el hosts del servidor,
+   - verifica 443 y el firewall (las reglas ya son Any profile,
+     tambien funcionan si Windows marca la red como Publica),
+   - prueba https://hospitalkuxtal.com/ y https://kuxtal.com/,
+   - genera C:\DataHunt\Expo\Paquete-Amigo-Expo.zip con un
+     Configurar-Amigo.cmd que ya trae la IP nueva pegada.
+
+   Si quieres ver que haria sin cambiar nada:
+     ... Preparar-Exposicion.ps1 -SoloVerificar
+   Si quieres forzar una IP concreta:
+     ... Preparar-Exposicion.ps1 -ForzarIp 192.168.15.23
+
+c) Revisar el resultado:
+     type C:\DataHunt\Expo\PARA-EL-AMIGO.txt
+   Ahi esta la IP y el comando exacto.
+
+----------------------------------------------------------------------
+2) EN LA PC DEL AMIGO
+----------------------------------------------------------------------
+a) Copiar Paquete-Amigo-Expo.zip (USB, correo, OneDrive). No uses
+   \\SRV-HOSP-01\TI alli: el nombre del servidor puede no resolver en la
+   red de la escuela.
+
+b) Descomprimir y ejecutar COMO ADMINISTRADOR:
+     Configurar-Amigo.cmd
+   (Aceptar UAC.)
+
+   Eso agrega al hosts:
+     <IP_DE_LA_ESCUELA> kuxtal.com www.kuxtal.com hospitalkuxtal.com www.hospitalkuxtal.com
+   e importa el certificado en Trusted Root. Por eso no sale "No es seguro".
+
+c) Navegador:
+     kuxtal.com
+   Tambien: hospitalkuxtal.com. Sin IP y sin puerto.
+
+Comando manual equivalente (si no quieres usar el .cmd):
+  powershell.exe -ExecutionPolicy Bypass -File .\Configurar-Cliente-Kuxtal.ps1 -ServidorIp <IP_DE_LA_ESCUELA>
+
+----------------------------------------------------------------------
+3) VERIFICACION RAPIDA
+----------------------------------------------------------------------
+En la PC del amigo:
+  Test-NetConnection <IP_DE_LA_ESCUELA> -Port 443      -> True
+  nslookup kuxtal.com                                  -> la IP de la escuela
+  Invoke-WebRequest https://hospitalkuxtal.com/        -> HTTP 200
+
+Si entra por la IP directa y el navegador avisa de certificado: es normal,
+el certificado cubre los dominios pero no una IP arbitraria de otra red.
+Entra por kuxtal.com.
+
+----------------------------------------------------------------------
+4) SI NO CONECTA
+----------------------------------------------------------------------
+- Test-NetConnection da False pero en el servidor la app esta arriba:
+  el Wi-Fi de la escuela probablemente tiene "aislamiento de clientes".
+  Soluciones, en orden:
+  1) Plan B Tailscale: en la PC del amigo instalar Tailscale, entrar a la
+     misma tailnet y ejecutar Configurar-Amigo-Tailscale.cmd.
+  2) Crear un hotspot desde el celular o desde otra laptop y conectar
+     a los dos equipos a ese hotspot.
+  3) Un router/switch pequeño entre los dos equipos.
+
+- Si cambio la IP del Wi-Fi: volver a ejecutar Preparar-Exposicion.ps1
+  en el servidor y reenviar el ZIP generado al amigo.
+
+- Si Windows marca la red como Publica: no hay problema, las reglas
+  "DataHunt 443 TLS" y "DataHunt 80 TLS" tienen Profile=Any.
+
+----------------------------------------------------------------------
+5) ESTO NO ES INTERNET PUBLICO
+----------------------------------------------------------------------
+Este procedimiento es solo para equipos DENTRO de la red de la escuela.
+Para que qualquer persona en Internet abra la pagina haria falta:
+  - redireccion de puerto 443 en el router de la escuela (rara vez permitido),
+    o un tunel (Tailscale Funnel / Cloudflare Tunnel / ngrok), y
+  - un certificado publico (Let's Encrypt) y DNS publico.
+No cambies certificado ni DNS publico sin aprobacion.
+
+----------------------------------------------------------------------
+6) AL VOLVER AL HOSPITAL
+----------------------------------------------------------------------
+- El servidor: ejecutar
+    powershell.exe -ExecutionPolicy Bypass -File C:\DataHunt\Actualizar-DnsKuxtal.ps1
+  (o esperar 5 minutos, la tarea programada ya lo hace sola). Volvera a
+  192.168.100.50.
+- La PC del amigo: ejecutar el configurador original con la IP del hospital:
+    powershell.exe -ExecutionPolicy Bypass -File .\Configurar-Cliente-Kuxtal.ps1 -ServidorIp 192.168.100.50

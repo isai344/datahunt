@@ -1,0 +1,153 @@
+RESPALDO ANTES DE CONFIGURAR kuxtal.com (27/11/2026)
+=====================================================
+Servidor: SRV-HOSP-01 (kuxtal.local)
+
+ESTADO PREVIO
+-------------
+app.ps1:
+  linea 23: $Direccion = "+"
+  linea 24: $Puerto    = 5000
+  linea 28: $ExigirHttps      = $false
+  linea 1627: $servidor.Prefixes.Add("http://$($Direccion):$Puerto/")
+  App: DETENIDA, sin listener en 5000.
+
+DNS:
+  Zona kuxtal.com: NO EXISTIA.
+  kuxtal.com resolvia publicamente a 44.221.248.111.
+
+TLS:
+  Puerto 443: sin listener, sin enlace SSL, sin URL ACL.
+  Certificados en Cert:\LocalMachine\My:
+    CN=localhost  594BB96ECE5C0CDEA58BFA54A67C033E2B3D4C1B
+    CN=msstrgsvc  C0E0F9863A8A479508617c7c98050c0b6670c859
+  Sin CA corporativa (0 CAs).
+
+REVERSION
+---------
+1) DNS:
+   Remove-DnsServerResourceRecord -ZoneName kuxtal.com -Name www -RRType A -Force
+   Remove-DnsServerResourceRecord -ZoneName kuxtal.com -Name @ -RRType A -Force
+   Remove-DnsServerZone -Name kuxtal.com -Force
+
+2) TLS / puerto 443:
+   netsh http delete sslcert ipport=0.0.0.0:443
+   netsh http delete sslcert ipport=[::]:443
+   netsh http delete urlacl url=https://+:443/
+   Remove-NetFirewallRule -DisplayName 'DataHunt HTTPS 443'
+   (no habia nada antes en 443)
+
+3) app.ps1: restaurar las 3 lineas indicadas arriba
+   ($Puerto=5000 y prefijo "http://").
+
+4) Certificado: quitar de My y de Root si se decide revertir
+   (no se habia creado ninguno para kuxtal.com).
+
+5) URL ACL 5000 / reglas DataHunt 5000 / 5990: NO se modifican en este cambio.
+
+=====================================================
+ADDENDA - ESTADO FINAL IMPLEMENTADO (27/11/2026)
+=====================================================
+
+CERTIFICADO
+  Subject: CN=kuxtal.com
+  Thumbprint: FEDE8804439B0EB6F6AC45B6AD5C79FBA0313175
+  SAN: kuxtal.com, www.kuxtal.com, srv-hosp-01
+  KeyUsage: DigitalSignature + KeyEncipherment; EKU Server Authentication
+  SHA-256 / RSA 2048; vigencia 2 anios (hasta 27/11/2028)
+  Archivo publicable: C:\DataHunt\kuxtal.com.cer
+  Importado en Cert:\LocalMachine\Root del servidor.
+  Publicado en AD: certutil -dspublish -f C:\DataHunt\kuxtal.com.cer RootCA
+  (CertUtil confirmo "Certificate added to DS store").
+
+TLS / HTTP.SYS
+  netsh http add sslcert ipport=0.0.0.0:443 certhash=FEDE8804439B0EB6F6AC45B6AD5C79FBA0313175 appid={B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}
+  netsh http add sslcert ipport=[::]:443  certhash=FEDE8804439B0EB6F6AC45B6AD5C79FBA0313175 appid={B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}
+  URL ACL: https://+:443/ y http://+:80/ con SDDL para SYSTEM + KUXTAL\adm.isai
+  Firewall: reglas entrantes "DataHunt 443 TLS" y "DataHunt 80 TLS" (TCP, Any)
+
+DNS
+  Zona kuxtal.com: primaria local (archivo kuxtal.com.dns).
+  Nota: Add-DnsServerPrimaryZone con -ReplicationScope Domain fallo con
+  DNS_ERROR_DP_DOES_NOT_EXIST (9901). Al haber un solo DC, la zona local
+  es equivalente en la practica.
+  Registros: A @ = 192.168.100.50; CNAME www -> kuxtal.com.
+  El DNS del servidor es autoritativo (nslookup kuxtal.com 127.0.0.1 -> 192.168.100.50).
+  IMPORTANTE: el resolver por defecto del servidor apunta al router (dev.opt),
+  por eso se agrego entrada al archivo hosts local:
+    192.168.100.50 kuxtal.com www.kuxtal.com # Data Hunt kuxtal.com (gestionado por Actualizar-DnsKuxtal.ps1)
+
+APP
+  app.ps1: $Puerto=443, $PuertoRedireccion=80, $ExigirHttps=$true,
+  prefijos https://+:443/ y http://+:80/, redireccion 301 con querystring.
+  Ademas se agrego Escribir-Cuerpo() para que las peticiones HEAD no
+  envien cuerpo (evitaba que curl -I colgara esperando Content-Length).
+  App en linea: PID 3028 (verificar con Get-NetTCPConnection -LocalPort 443).
+
+TAREAS PROGRAMADAS (creadas, estado Ready)
+  Kuxtal-DNS-Actualizar      : cada 5 min, actualiza registro A y hosts.
+  Kuxtal-DNS-Actualizar-Boot : al arrancar, lo mismo.
+  Kuxtal-DataHunt-Auto       : al arrancar +1 min, ejecuta Iniciar-DataHunt.ps1 como SYSTEM.
+  (Kuxtal-DataHunt sigue rota: usuario KUXTAL\svc_datahunt$ inexistente).
+
+SCRIPT PARA CLIENTES
+  C:\DataHunt\Configurar-Cliente-Kuxtal.ps1
+  Agrega hosts kuxtal.com -> IP del servidor; opcional -SetDns.
+  Necesario porque el DHCP lo da el router (192.168.100.1), no este servidor.
+
+CAMBIO DE IP (Wi-Fi / reinicio)
+  Actualizar-DnsKuxtal.ps1 elige Ethernet > Wi-Fi > otra IP LAN, ignora Tailscale
+  y APIPA, y reescribe el registro A y el hosts local. Log: C:\DataHunt\dns_update.log.
+  En los clientes hay que volver a ejecutar Configurar-Cliente-Kuxtal.ps1 si la IP cambio.
+
+ROLLBACK ESPECIFICO DE ESTA FASE
+  Unregister-ScheduledTask -TaskName 'Kuxtal-DNS-Actualizar','Kuxtal-DNS-Actualizar-Boot','Kuxtal-DataHunt-Auto' -Confirm:$false
+  netsh http delete sslcert ipport=0.0.0.0:443
+  netsh http delete sslcert ipport=[::]:443
+  netsh http delete urlacl url=https://+:443/
+  netsh http delete urlacl url=http://+:80/
+  netsh advfirewall firewall delete rule name="DataHunt 443 TLS"
+  netsh advfirewall firewall delete rule name="DataHunt 80 TLS"
+  Remove-DnsServerZone -Name kuxtal.com -Force
+  Quitar la linea del marcador de C:\Windows\System32\drivers\etc\hosts
+  Restaurar app.ps1 a $Puerto=5000 y prefijo http:// (ver ESTADO PREVIO).
+
+=====================================================
+ADDENDA 2 - NOMBRE DEFINITIVO hospitalkuxtal.com (27/11/2026)
+=====================================================
+
+CERTIFICADO VIGENTE (reemplaza al de la addenda anterior)
+  Subject: CN=hospitalkuxtal.com
+  Thumbprint: A5505BF4269ABD7D387B80E8B3D0ADC9C737BE9F
+  SAN: hospitalkuxtal.com, www.hospitalkuxtal.com, kuxtal.com,
+       www.kuxtal.com, srv-hosp-01, IP 192.168.100.50, 192.168.100.61,
+       100.109.230.106
+  SHA-256 / RSA 2048; EKU Server Authentication; vigencia 2 anios.
+  Archivo: C:\DataHunt\hospitalkuxtal.com.cer
+  Importado en Cert:\LocalMachine\Root del servidor y publicado en AD:
+    certutil -dspublish -f C:\DataHunt\hospitalkuxtal.com.cer RootCA
+  Certificado anterior (FEDE8804...5175) NO se borro; se conserva para rollback.
+
+TLS VIGENTE
+  netsh http add sslcert ipport=0.0.0.0:443 certhash=A5505BF4269ABD7D387B80E8B3D0ADC9C737BE9F appid={B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}
+  netsh http add sslcert ipport=[::]:443  certhash=A5505BF4269ABD7D387B80E8B3D0ADC9C737BE9F appid={B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}
+
+DNS VIGENTE
+  Zonas primarias: hospitalkuxtal.com y kuxtal.com (archivos .dns).
+  En ambas: A @ = 192.168.100.50; CNAME www -> dominio.
+  hosts del servidor:
+    192.168.100.50 kuxtal.com www.kuxtal.com hospitalkuxtal.com www.hospitalkuxtal.com # Data Hunt dominios (gestionado por Actualizar-DnsKuxtal.ps1)
+
+CLIENTES
+  Configurar-Cliente-Kuxtal.ps1 agrega los cuatro nombres al hosts e importa
+  el certificado en Cert:\LocalMachine\Root, eliminando el aviso "No es seguro".
+  Rollback en cliente:
+    Quitar la linea marcada del hosts.
+    Remove-Item Cert:\LocalMachine\Root\A5505BF4269ABD7D387B80E8B3D0ADC9C737BE9F
+
+ROLLBACK AL CERTIFICADO ANTERIOR (kuxtal.com)
+  netsh http delete sslcert ipport=0.0.0.0:443
+  netsh http delete sslcert ipport=[::]:443
+  netsh http add sslcert ipport=0.0.0.0:443 certhash=FEDE8804439B0EB6F6AC45B6AD5C79FBA0313175 appid={B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}
+  netsh http add sslcert ipport=[::]:443  certhash=FEDE8804439B0EB6F6AC45B6AD5C79FBA0313175 appid={B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}
+  Quitar la zona hospitalkuxtal.com si ya no se desea:
+    Remove-DnsServerZone -Name hospitalkuxtal.com -Force

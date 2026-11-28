@@ -1,0 +1,5 @@
+﻿"DistinguishedName","HostName","RecordClass","RecordData","RecordType","Timestamp","TimeToLive","Type","PSComputerName"
+"@","@","IN","DnsServerResourceRecordA","A",,"01:00:00","1",
+"@","@","IN","DnsServerResourceRecordNS","NS",,"01:00:00","2",
+"@","@","IN","DnsServerResourceRecordSoa","SOA",,"01:00:00","6",
+"www","www","IN","DnsServerResourceRecordCName","CNAME",,"01:00:00","5",

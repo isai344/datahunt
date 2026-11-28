@@ -1,0 +1,258 @@
+ASUNTO: Data Hunt v2 - cierre de incidencia TLS y publicacion en kuxtal.com (27/11/2026)
+
+Hola Emilio:
+
+Te dejo el resumen completo de como quedo la incidencia del error
+ERR_SSL_KEY_USAGE_INCOMPATIBLE, el bloqueo de T119, T609, T117 y DEP-01,
+y la publicacion de la pagina en https://kuxtal.com/.
+
+----------------------------------------------------------------------
+1. LO QUE SE PIDIO
+----------------------------------------------------------------------
+- Desbloquear https://localhost:5990/ en SRV-HOSP-01 (100.109.230.106,
+  dominio kuxtal.local) donde supuestamente correria Data Hunt v2.
+- Que se generaran registros en C:\DataHunt\access_log.csv con
+  Exito = False tras 3 o 4 intentos fallidos de login.
+- Diagnostico previo de solo lectura, aviso al canal tecnico, respaldo
+  del thumbprint y borrador de bitacora con revision.
+- Adicional: configurar TLS/SSL en este servidor y un dominio DNS
+  kuxtal.com para entrar sin escribir IP ni puerto.
+
+----------------------------------------------------------------------
+2. LO QUE ENCONTRAMOS (diagnostico de solo lectura)
+----------------------------------------------------------------------
+- El enlace 0.0.0.0:5990 apuntaba al certificado 594BB96E...C1B
+  (CN=localhost) con KeyUsage Digital Signature + Key Encipherment,
+  EKU Server Authentication, SAN localhost, srv-hosp-01 y
+  srv-hosp-01.kuxtal.local, SHA-256, vigente hasta 27/11/2027. Ese esta bien.
+- Pero habia un segundo enlace, [::]:5990, con el certificado
+  C0E0F986...0C859 (CN=msstrgsvc), KeyUsage solo Key Encipherment,
+  EKU "All application policies", sin SAN y SHA-1. Como localhost resuelve
+  a ::1, Edge recibia ese certificado: de ahi el error.
+- app.ps1 no creaba ni enlazaba certificados. Escuchaba en http://+:5000/.
+- Dato decisivo: HTTPS://*:5990/ pertenece al PID 3892 = svchost.exe del
+  servicio de Windows MSStrgSvc (Standards-Based Storage Management),
+  NO a Data Hunt. Exige certificado de cliente y responde 401.
+- La tarea Kuxtal-DataHunt tenia LastTaskResult=1 y su principal era
+  KUXTAL\svc_datahunt$, cuenta que NO existe. users.csv tenia solo encabezado (causa del rechazo de credenciales; corregido en la fase f).
+
+----------------------------------------------------------------------
+3. LO QUE HICIMOS
+----------------------------------------------------------------------
+a) Se aviso al canal tecnico y se guardo el respaldo con ambos
+   thumbprints, AppIDs y comandos de reversion en:
+   C:\DataHunt\ssl_5990_backup_20261127.txt
+
+b) Se aplico el reenlace autorizado de [::]:5990 y, al descubrir que el
+   puerto es de MSStrgSvc, se REVERTIO de inmediato a su estado original.
+   Los certificados no se borraron.
+
+c) Se levanto la app en http://localhost:5000/, se generaron registros de
+   login fallido y se valido el acceso por todas las IPs locales.
+
+d) FASE FINAL (autorizada): se configuro publicacion HTTPS con dominio:
+   - Certificado autofirmado CN=kuxtal.com, SAN kuxtal.com, www.kuxtal.com
+     y srv-hosp-01, SHA-256/RSA 2048, EKU Server Authentication, 2 anios.
+     Thumbprint FEDE8804439B0EB6F6AC45B6AD5C79FBA0313175.
+     Exportado a C:\DataHunt\kuxtal.com.cer, importado en Trusted Root del
+     servidor y publicado en Trusted Root de AD con certutil -dspublish.
+   - TLS enlazado en 0.0.0.0:443 y [::]:443 con AppID
+     {B1E4A0F2-3C5D-4E67-9A80-1D2F3C4B5E6A}.
+   - URL ACL https://+:443/ y http://+:80/ para SYSTEM y adm.isai.
+   - Firewall entrante TCP 443 y 80 (reglas DataHunt 443 TLS / 80 TLS).
+   - Zona DNS kuxtal.com en este DC (primaria local por un error
+     DNS_ERROR_DP_DOES_NOT_EXIST con la opcion integrada en AD), con
+     registro A @ -> 192.168.100.50 y CNAME www -> kuxtal.com.
+   - app.ps1: $Puerto=443, $PuertoRedireccion=80, $ExigirHttps=$true,
+     prefijos https://+:443/ y http://+:80/, redireccion 301 con querystring.
+     Tambien se corrigio el envio de cuerpo en peticiones HEAD.
+
+----------------------------------------------------------------------
+e) FASE FINAL 2 (nombre definitivo y fin del aviso de seguridad):
+   - Certificado nuevo CN=hospitalkuxtal.com, thumbprint
+     A5505BF4269ABD7D387B80E8B3D0ADC9C737BE9F. SAN: hospitalkuxtal.com,
+     www.hospitalkuxtal.com, kuxtal.com, www.kuxtal.com, srv-hosp-01 y
+     las IP 192.168.100.50, 192.168.100.61 y 100.109.230.106. SHA-256,
+     RSA 2048, EKU Server Authentication, 2 anios. Exportado a
+     C:\DataHunt\hospitalkuxtal.com.cer, importado en Root del servidor
+     y publicado en Trusted Root de AD. El certificado anterior NO se borro.
+   - TLS reenlazado en 0.0.0.0:443 y [::]:443 con el mismo AppID.
+   - Zona DNS hospitalkuxtal.com con A @ -> 192.168.100.50 y CNAME www.
+     Actualizar-DnsKuxtal.ps1 mantiene ahora AMBAS zonas y el hosts del
+     servidor con los cuatro nombres.
+   - Configurar-Cliente-Kuxtal.ps1 ahora agrega los dominios al hosts e
+     importa el certificado en Trusted Root del cliente. Con eso desaparece
+     el aviso "No es seguro", tanto por dominio como por IP.
+
+----------------------------------------------------------------------
+f) FASE 5 (credenciales rechazadas):
+   - Causa: users.csv estaba vacio (solo encabezado, 190 bytes). La app lee
+     ese archivo en cada login, por eso rechazaba paciente y empleado.
+   - Se verifico que los 79 hashes de usuarios_a_cargar_empleados_pacientes.csv
+     coinciden con las claves de credenciales_generadas.csv, y que los 4 hashes
+     de usuarios_a_cargar.csv coinciden con 12345678. Ninguno se regenero.
+   - Creado Restaurar-Usuarios.ps1 (idempotente): copia los PasswordHash tal
+     cual, respalda el archivo previo, valida los hashes y omite duplicados.
+   - Resultado: 82 usuarios (4 privilegiados, 58 empleados, 20 pacientes).
+     Se omitio 1 duplicado (privacidad@kuxtal.test, con la misma clave en
+     ambas fuentes); se conservo la version privilegiada.
+   - Cuentas privilegiadas: el restaurador no las probo y conservo sus hashes.
+     Actualizacion 16:23: despues de la restauracion se registraron accesos
+     desde la app entre 15:45 y 15:52 (4 MFA_ENROLAMIENTO_INICIADO,
+     3 MFA_ACTIVADA). dpo, admision y privacidad quedaron con secreto TOTP
+     generado por el formulario; admin sigue sin secreto. Ningun PasswordHash
+     se imprimio ni se cambio. Restaurar-Usuarios.ps1 ahora se niega a sobrescribir si detecta secretos TOTP (solo con -Forzar y respaldo).
+     Los hashes de las cuatro cuentas siguen siendo los originales.
+
+----------------------------------------------------------------------
+4. ESTADO ACTUAL
+----------------------------------------------------------------------
+- URL principal: https://hospitalkuxtal.com/  (HTTP 200, titulo "Inicio -
+  Hospital Integral Kuxtal"). http://hospitalkuxtal.com/ redirige 301 a HTTPS.
+- Alias: https://kuxtal.com/, https://www.hospitalkuxtal.com/,
+  https://www.kuxtal.com/, https://srv-hosp-01/ y https://192.168.100.50/
+  (estos dos ultimos sin aviso si se importo el certificado en el cliente).
+- App en linea: PID 3028, escuchando en 443 (HTTPS) y 80 (redireccion).
+- Arranque automatico: tarea Kuxtal-DataHunt-Auto (SYSTEM, al arrancar
+  +1 min, 3 reintentos).
+- DNS dinamico: tareas Kuxtal-DNS-Actualizar (cada 5 min) y
+  Kuxtal-DNS-Actualizar-Boot (al arrancar). Actualizan el registro A de AMBAS
+  zonas y el archivo hosts del servidor si cambia la IP por Wi-Fi o DHCP.
+- Puerto 5990 / MSStrgSvc: identico al inicio. No tocar.
+- Certificados viejos (CN=localhost y CN=msstrgsvc): intactos.
+- users.csv: 82 cuentas con sus hashes originales. 31567 bytes. SHA-256
+  vigente: 009E62215FD47AA53FB6EC9C7C477616E80C41F6C97DEA0965E35CF10026997A
+  (el inicial tras la restauracion fue 3DCBE0F7...D54315; cambio por los
+  enrolamientos MFA posteriores).
+
+----------------------------------------------------------------------
+5. VALIDACION
+----------------------------------------------------------------------
+- https://hospitalkuxtal.com/ -> HTTP 200.
+- http://hospitalkuxtal.com/ -> 301 Location: https://hospitalkuxtal.com/.
+- https://kuxtal.com/, https://www.hospitalkuxtal.com/,
+  https://www.kuxtal.com/, https://192.168.100.50/ y https://srv-hosp-01/
+  -> HTTP 200 validando certificado (curl sin -k).
+- curl sin -k (validando certificado) -> HTTP 200, IP 192.168.100.50:
+  el certificado es confiable en el servidor.
+- /login, /registro -> 200 por el dominio. /privacidad, /admin,
+  /ajustes y /mi-cuenta -> 302 a login (correcto sin autenticar).
+- POST /login con paciente PAC-001 y empleado EMP-0002 (claves de
+  credenciales_generadas.csv) -> 200, titulo "Mi cuenta", /mi-cuenta -> 200
+  y nuevas filas en access_log.csv con Evento=LOGIN_OK, Exito=1.
+- POST /registro de prueba -> 200 "Pre-registro creado correctamente";
+  users.csv paso de 82 a 83, con PasswordHash salt:hash y SIN clave en
+  texto plano; evento REGISTRO_OK con Exito=1. La cuenta de prueba se
+  elimino restaurando el archivo (82 usuarios, mismo SHA-256).
+- POST /login con contrasena incorrecta -> 200 y nueva fila en
+  C:\DataHunt\access_log.csv: Evento=LOGIN_OK, Ruta=/login, Exito=0,
+  Nivel=WARN, IPAnonimizada=NO_REGISTRADA.
+- nslookup kuxtal.com 127.0.0.1 y nslookup hospitalkuxtal.com 127.0.0.1
+  -> 192.168.100.50 (zonas autoritativas).
+- netsh http show sslcert: 443 con el certificado A5505BF4...BE9F;
+  5990 con los thumbprints originales (sin cambios).
+
+----------------------------------------------------------------------
+6. COMPARACION: LO QUE NECESITABAS VS LO QUE QUEDO
+----------------------------------------------------------------------
+| Necesidad                              | Resultado | Detalle |
+|----------------------------------------|-----------|---------|
+| Arreglar ERR_SSL_KEY_USAGE_INCOMPATIBLE en 5990 | NO (premisa incorrecta) | 5990 es MSStrgSvc; se revirtio |
+| App accesible para las tareas          | SI        | https://hospitalkuxtal.com/ responde 200 |
+| Entrar sin IP ni puerto                | SI        | https://hospitalkuxtal.com/ y https://kuxtal.com/ |
+| access_log.csv con intentos fallidos   | PARCIAL   | Filas con Exito=0 (equivalente a False), Nivel=WARN |
+| T119, T609, T117 y DEP-01 desbloqueados| PARCIAL   | Bloqueo tecnico eliminado; falta que las ejecutes |
+| HTTPS obligatorio                      | SI        | TLS directo en 443, sin proxy, sin usar 5990 |
+| Certificado confiable                  | SI        | Root del servidor, AD y script del cliente; SAN incluye dominios e IP |
+| Respaldo y reversion                   | SI        | backup_kuxtalcom_20261127.txt + ssl_5990_backup... |
+| Persistencia tras reinicio             | SI        | Kuxtal-DataHunt-Auto (antes la tarea estaba rota) |
+| IP cambiante por Wi-Fi / reinicio      | SI en el servidor | DNS+hosts se actualizan solos cada 5 min |
+| Clients ven hospitalkuxtal.com / kuxtal.com | LISTO para aplicar | El DHCP lo da el router; ejecutar Configurar-Cliente-Kuxtal.ps1 una vez en cada PC (resuelve nombres e importa el certificado) |
+| Login de paciente y empleado          | SI        | 82 cuentas restauradas; PAC-001 y EMP-0002 probados con exito (Exito=1) |
+| Cuentas privilegiadas / Google Auth   | HASHES SIN CAMBIOS | 3 secretos TOTP generados por la app el 27/11 (dpo, admision, privacidad); admin sin secreto |
+
+----------------------------------------------------------------------
+7. BITACORA DE CAMBIOS
+----------------------------------------------------------------------
+Fecha: 27/11/2026
+Servidor: SRV-HOSP-01 (kuxtal.local)
+Hallazgo: error TLS proveniente de MSStrgSvc, no de Data Hunt
+Cambio 1: reenlace de [::]:5990 ejecutado y revertido en la misma ventana
+Cambio 2: arranque de app.ps1 y generacion de registros de login fallido
+Cambio 3: URL ACL de 5000 ampliada a adm.isai (conservando adm.adrian)
+Cambio 4: certificado CN=kuxtal.com, TLS en 443, ACL/Firewall 443 y 80
+Cambio 5: zona DNS kuxtal.com, A @ = 192.168.100.50, CNAME www
+Cambio 6: app.ps1 a HTTPS 443 + redireccion 80; fix de peticiones HEAD
+Cambio 7: tareas de arranque de app y de actualizacion dinamica de DNS/hosts
+Cambio 8: certificado CN=hospitalkuxtal.com con SAN de dominios e IP,
+  reenlace en 443, zona DNS hospitalkuxtal.com y script de cliente que
+  importa el certificado en Trusted Root (fin del aviso "No es seguro").
+Cambio 9: users.csv restaurado a 82 cuentas con hashes originales;
+  Restaurar-Usuarios.ps1 y su respaldo; sin cambios en cuentas privilegiadas.
+Cambio 10: kit para exposicion en otra red (Wi-Fi de escuela):
+  Actualizar-DnsKuxtal.ps1 acepta -ForzarIp / -Preferir; nuevo
+  C:\DataHunt\Expo\Preparar-Exposicion.ps1 que detecta la IP, actualiza DNS y
+  hosts, verifica 443/firewall y genera Paquete-Amigo-Expo.zip con
+  Configurar-Amigo.cmd (IP nueva pegada y alternativa Tailscale).
+  Kit listo: C:\DataHunt\Kit-Exposicion.zip. Cliente ya no prueba HTTPS por IP
+  (IP ajena no esta en el SAN) y usa Test-NetConnection en su lugar.
+Archivos creados: Configurar-KuxtalCom.ps1, Actualizar-DnsKuxtal.ps1,
+  Configurar-Tareas.ps1, Configurar-Cliente-Kuxtal.ps1, kuxtal.com.cer,
+  hospitalkuxtal.com.cer, Restaurar-Usuarios.ps1, Expo\, Kit-Exposicion.zip,
+  adrian-emi.md, dns_update.log, backups y este informe.
+Reversion: backup_kuxtalcom_20261127.txt (comandos exactos) y
+  ssl_5990_backup_20261127.txt (para cualquier cambio en 5990).
+
+----------------------------------------------------------------------
+8. DECISIONES / PENDIENTES
+----------------------------------------------------------------------
+1) Tomar el paquete de \\SRV-HOSP-01\TI\Paquete-Cliente-Kuxtal.zip (copia
+   local en C:\DataHunt\Paquete-Cliente-Kuxtal.zip), descomprimirlo en cada
+   PC que deba entrar y ejecutar Configurar-Cliente-Kuxtal.ps1 como
+   administrador UNA VEZ. Incluye INSTRUCCIONES.txt y el certificado.
+   El DHCP lo entrega el router 192.168.100.1, no este servidor; sin esa
+   entrada las PC resolverian ambos dominios a la IP publica 44.221.248.111.
+   El script tambien importa el certificado y quita el aviso de seguridad.
+2) Si la IP del servidor cambia (Wi-Fi), volver a ejecutar el script del
+   punto 1 en los clientes. En el servidor ya es automatico.
+3) Para la exposicion en la escuela: llevar C:\DataHunt\Kit-Exposicion.zip;
+   en la escuela ejecutar Preparar-Exposicion.ps1 en el servidor, entregar
+   Paquete-Amigo-Expo.zip al amigo y el ejecuta Configurar-Amigo.cmd como
+   administrador; luego abre kuxtal.com. Ver C:\DataHunt\Expo\INSTRUCCIONES-EXPO.txt.
+   Es solo red local; Internet publico requeriria tunel/redireccion y cert publico.
+4) Confirmar si Exito=0 es aceptable o si se quiere como texto "False".
+5) La tarea antigua Kuxtal-DataHunt sigue con svc_datahunt$ inexistente;
+   se puede desactivar para evitar ruido en el visor de tareas.
+6) Las contraseñas privilegiadas no se cambiaron. Tres cuentas ya tienen
+   secreto TOTP generado por la app el 27/11 (dpo, admision, privacidad);
+   admin no. Antes de cualquier restauracion, exporta esos secretos desde
+   users.csv para no romper Google Authenticator.
+
+----------------------------------------------------------------------
+9. COMANDOS DE VERIFICACION / REVERSION
+----------------------------------------------------------------------
+Verificar:
+  Resolve-DnsName hospitalkuxtal.com -Type A
+  Resolve-DnsName kuxtal.com -Type A
+  nslookup hospitalkuxtal.com 127.0.0.1
+  netsh http show sslcert
+  Get-NetTCPConnection -LocalPort 443,80 -State Listen
+  Invoke-WebRequest https://hospitalkuxtal.com/ -UseBasicParsing
+  Invoke-WebRequest https://kuxtal.com/ -UseBasicParsing
+  (Import-Csv C:\DataHunt\users.csv -Encoding utf8).Count
+  Get-FileHash C:\DataHunt\users.csv -Algorithm SHA256
+  Get-ScheduledTask -TaskName 'Kuxtal-*' | Select TaskName,State
+  Import-Csv C:\DataHunt\access_log.csv | Where-Object {$_.Exito -eq '0'}
+  powershell.exe -ExecutionPolicy Bypass -File C:\DataHunt\Expo\Preparar-Exposicion.ps1 -SoloVerificar
+Detener la app:
+  Stop-Process -Id 3028
+Reversion completa de la fase kuxtal.com:
+  Ver C:\DataHunt\backup_kuxtalcom_20261127.txt (ADDENDA).
+Reversion SSL del 5990 (solo si se vuelve a tocar):
+  netsh http delete sslcert ipport=[::]:5990
+  netsh http add sslcert ipport=[::]:5990 certhash=c0e0f9863a8a479508617c7c98050c0b6670c859 appid={468e21d1-a4cb-4134-8d9f-800c5ff2086f}
+
+Quedo atento a tus decisiones para cerrar los puntos pendientes.
+
+Saludos,
+<tu nombre>

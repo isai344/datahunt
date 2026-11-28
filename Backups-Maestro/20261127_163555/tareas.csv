@@ -1,0 +1,6 @@
+﻿"State","Actions","Author","Date","Description","Documentation","Principal","SecurityDescriptor","Settings","Source","TaskName","TaskPath","Triggers","URI","Version","PSComputerName"
+"Ready","Microsoft.Management.Infrastructure.CimInstance[]",,,,,"MSFT_TaskPrincipal2","","MSFT_TaskSettings3",,"Kuxtal-DataHunt","\","Microsoft.Management.Infrastructure.CimInstance[]","\Kuxtal-DataHunt",,
+"Ready","Microsoft.Management.Infrastructure.CimInstance[]",,,,,"MSFT_TaskPrincipal2","","MSFT_TaskSettings3",,"Kuxtal-DataHunt-Auto","\","Microsoft.Management.Infrastructure.CimInstance[]","\Kuxtal-DataHunt-Auto",,
+"Ready","Microsoft.Management.Infrastructure.CimInstance[]",,,,,"MSFT_TaskPrincipal2","","MSFT_TaskSettings3",,"Kuxtal-DNS-Actualizar","\","Microsoft.Management.Infrastructure.CimInstance[]","\Kuxtal-DNS-Actualizar",,
+"Ready","Microsoft.Management.Infrastructure.CimInstance[]",,,,,"MSFT_TaskPrincipal2","","MSFT_TaskSettings3",,"Kuxtal-DNS-Actualizar-Boot","\","Microsoft.Management.Infrastructure.CimInstance[]","\Kuxtal-DNS-Actualizar-Boot",,
+"Ready","Microsoft.Management.Infrastructure.CimInstance[]",,,,,"MSFT_TaskPrincipal2","","MSFT_TaskSettings3",,"Kuxtal-Tailscale-al-arrancar","\","Microsoft.Management.Infrastructure.CimInstance[]","\Kuxtal-Tailscale-al-arrancar",,

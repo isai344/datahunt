@@ -1,0 +1,73 @@
+RESPALDO PREVIO AL CAMBIO TLS - Puerto 5990
+============================================
+Servidor      : SRV-HOSP-01 (100.109.230.106, dominio kuxtal.local)
+Fecha         : 2026-11-27
+Sesion        : kuxtal\adm.isai (administrador)
+Aplicacion    : Data Hunt v2 (tarea programada "Kuxtal-DataHunt" -> app.ps1 en http://+:5000/)
+Motivo        : ERR_SSL_KEY_USAGE_INCOMPATIBLE en https://localhost:5990/
+
+ENLACES SSL ACTUALES (netsh http show sslcert)
+----------------------------------------------
+[B1] ipport=0.0.0.0:5990
+     certhash = 594bb96ece5c0cdea58bfa54a67c033e2b3d4c1b
+     appid    = {15227503-29e0-42ca-865e-faaddba9d911}
+     subject  = CN=localhost
+     NotAfter = 2027-11-27 12:31:27
+     KeyUsage = Digital Signature, Key Encipherment (a0)
+     EKU      = Server Authentication (1.3.6.1.5.5.7.3.1)
+     SAN      = localhost, srv-hosp-01, srv-hosp-01.kuxtal.local
+     firma    = sha256RSA / 2048 bits
+     Estado   = CORRECTO
+
+[B2] ipport=[::]:5990   <-- enlace que usa localhost via ::1 (el que falla)
+     certhash = c0e0f9863a8a479508617c7c98050c0b6670c859
+     appid    = {468e21d1-a4cb-4134-8d9f-800c5ff2086f}
+     subject  = CN=msstrgsvc
+     NotAfter = 2036-11-25 11:57:19
+     KeyUsage = Key Encipherment (20)   <-- SIN Digital Signature
+     EKU      = All application policies (1.3.6.1.4.1.311.10.12.1)  <-- SIN Server Auth
+     SAN      = (ninguno)
+     firma    = sha1RSA / 2048 bits
+     Estado   = CAUSA DEL ERR_SSL_KEY_USAGE_INCOMPATIBLE
+
+ACEPTACION / REVERSION
+----------------------
+Si se reemplaza B2 por el certificado de B1, revertir con:
+
+  netsh http delete sslcert ipport=[::]:5990
+  netsh http add sslcert ipport=[::]:5990 certhash=c0e0f9863a8a479508617c7c98050c0b6670c859 appid={468e21d1-a4cb-4134-8d9f-800c5ff2086f} certstorename=MY
+
+Si se modifica ademas B1, revertir con:
+
+  netsh http delete sslcert ipport=0.0.0.0:5990
+  netsh http add sslcert ipport=0.0.0.0:5990 certhash=594bb96ece5c0cdea58bfa54a67c033e2b3d4c1b appid={15227503-29e0-42ca-865e-faaddba9d911} certstorename=MY
+
+Nota: los certificados NO se han eliminado del store Cert:\LocalMachine\My.
+Nota: app.ps1 no crea ni enlaza certificados; el enlace es manual (netsh).
+
+ADDENDA 2026-11-27 (ejecucion y reversin inmediata)
+----------------------------------------------------
+Se aplico la Opcion A autorizada: reenlace de [::]:5990 a 594bb96e...c1b.
+Comprobacion posterior: netsh http show servicestate revelo que HTTPS://*:5990/
+pertenece al proceso PID 3892 = svchost.exe de MSStrgSvc
+(Windows Standards-Based Storage Management), NO a Data Hunt.
+Data Hunt (app.ps1) escucha en http://+:5000/ y la tarea "Kuxtal-DataHunt"
+se ejecuta como svc_datahunt$ con LastTaskResult=1 (fallida); no hay listener en 5000.
+El 401 "Invalid Client Certificate" es propio de MSStrgSvc (autenticacion
+mutua TLS), no del certificado.
+
+Accion correctiva: se REVERTIO el enlace [::]:5990 a su estado original
+c0e0f986...0c859 con appid {468e21d1-a4cb-4134-8d9f-800c5ff2086f}
+y Certificate Store Name (null). Estado actual = identico al inicial.
+El puerto 5990 NO debe usarse para Data Hunt.
+
+ADDENDA 2 - URL ACL DEL PUERTO 5000 (26/27-11-2026)
+----------------------------------------------------
+Original: http://+:5000/ con SDDL D:(A;;GX;;;<SID adm.adrian ...1185) - solo ese usuario.
+Final:    misma URL con SDDL D:(A;;GX;;;<SID adm.adrian ...1185)(A;;GX;;;<SID adm.isai ...1175).
+Motivo: permitir que app.ps1 arranque con la cuenta de la sesion sin depender de elevacion.
+Rollback:
+  netsh http delete urlacl url=http://+:5000/
+  netsh http add urlacl url=http://+:5000/ user=KUXTAL\adm.adrian
+Lanzador creado: C:\DataHunt\Iniciar-DataHunt.ps1 (verifica prerrequisitos y arranca la app).
+Estado final de la app: DETENIDA, puerto 5000 libre.
